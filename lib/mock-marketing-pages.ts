@@ -1,0 +1,55 @@
+import type { LandingPage } from "@/lib/types";
+import { iso } from "@/lib/date-utils";
+
+export const marketingPageMocks: LandingPage[] = [
+  {
+    id: "lp_001",
+    name: "Black Friday Deal",
+    url: "example.com/black-friday-deal",
+    status: "Active",
+    views: 2450,
+    conversions: 294,
+    conversionRate: 12,
+    createdAt: iso(-90, "09:00"),
+  },
+  {
+    id: "lp_002",
+    name: "Spring Newsletter Signup",
+    url: "example.com/spring-newsletter-signup",
+    status: "Active",
+    views: 1800,
+    conversions: 396,
+    conversionRate: 22,
+    createdAt: iso(-200, "10:00"),
+  },
+  {
+    id: "lp_003",
+    name: "Product Demo Request",
+    url: "example.com/product-demo-request",
+    status: "Active",
+    views: 1200,
+    conversions: 180,
+    conversionRate: 15,
+    createdAt: iso(-150, "11:00"),
+  },
+  {
+    id: "lp_004",
+    name: "Waitlist Early Access",
+    url: "example.com/waitlist-early-access",
+    status: "Active",
+    views: 890,
+    conversions: 249,
+    conversionRate: 28,
+    createdAt: iso(-110, "14:00"),
+  },
+  {
+    id: "lp_005",
+    name: "Integration Comparison",
+    url: "example.com/integration-comparison",
+    status: "Draft",
+    views: 340,
+    conversions: 27,
+    conversionRate: 8,
+    createdAt: iso(-25, "09:00"),
+  },
+];

@@ -1,0 +1,63 @@
+"use client";
+
+import * as React from "react";
+import Link from "next/link";
+import {
+  Building2,
+  ContactRound,
+  FileType,
+  Handshake,
+  Plus,
+  UserPlus,
+} from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+const createOptions = [
+  { label: "New Lead", href: "/leads", icon: UserPlus, shortcut: "L" },
+  { label: "New Contact", href: "/contacts", icon: ContactRound, shortcut: "C" },
+  { label: "New Company", href: "/companies", icon: Building2, shortcut: "⇧C" },
+  { label: "New Deal", href: "/deals", icon: Handshake, shortcut: "D" },
+  { label: "New Task", href: "/tasks", icon: FileType, shortcut: "T" },
+  { label: "New Quote", href: "/quotes", icon: FileType, shortcut: "Q" },
+];
+
+function CreateMenu() {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button className="h-9 gap-1.5 px-3 sm:px-4" aria-label="Create new">
+          <Plus className="h-4 w-4" aria-hidden />
+          <span className="hidden sm:inline">Create</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel>Create new</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {createOptions.map((option) => {
+          const Icon = option.icon;
+          return (
+            <DropdownMenuItem key={option.label} asChild>
+              <Link href={option.href} scroll={false}>
+                <Icon className="text-muted-foreground" aria-hidden />
+                <span>{option.label}</span>
+                <DropdownMenuShortcut>{option.shortcut}</DropdownMenuShortcut>
+              </Link>
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+export { CreateMenu };

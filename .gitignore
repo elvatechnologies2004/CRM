@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local scratch / build logs (never commit)
+*.txt
+/n
+FINAL_BUILD.txt
+server.log
+*.log

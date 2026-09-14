@@ -1,0 +1,61 @@
+import type { AiAgent } from "@/lib/types";
+
+export const agentMocks: AiAgent[] = [
+  {
+    id: "agent_001",
+    name: "Lead Qualifier",
+    type: "Lead",
+    purpose: "Scores inbound leads, enriches records and routes hot leads to owners.",
+    status: "Active",
+    actionsToday: 124,
+    pendingApprovals: 2,
+    permissions: [
+      { object: "Leads", level: "Read + Write" },
+      { object: "Sequences", level: "Execute" },
+    ],
+    approvalMode: "Ask Before Action",
+    lastActivity: "5 min ago",
+  },
+  {
+    id: "agent_002",
+    name: "Deal Navigator",
+    type: "Sales",
+    purpose: "Analyzes pipeline, forecasts close probability and flags at-risk deals.",
+    status: "Paused",
+    actionsToday: 89,
+    pendingApprovals: 1,
+    permissions: [
+      { object: "Deals", level: "Read" },
+      { object: "Forecast", level: "Read" },
+    ],
+    approvalMode: "Draft Only",
+    lastActivity: "1 hour ago",
+  },
+  {
+    id: "agent_003",
+    name: "Health Guardian",
+    type: "Customer Success",
+    purpose: "Monitors account health, predicts churn and recommends upsells.",
+    status: "Active",
+    actionsToday: 231,
+    pendingApprovals: 0,
+    permissions: [
+      { object: "Accounts", level: "Read" },
+      { object: "Tasks", level: "Read + Write" },
+    ],
+    approvalMode: "Auto-Execute Allowed Actions",
+    lastActivity: "12 min ago",
+  },
+  {
+    id: "agent_004",
+    name: "Invoice Auditor",
+    type: "Finance",
+    purpose: "Validates invoices, chases overdue payments and flags anomalies.",
+    status: "Archived",
+    actionsToday: 0,
+    pendingApprovals: 0,
+    permissions: [{ object: "Invoices", level: "Read + Write" }],
+    approvalMode: "Draft Only",
+    lastActivity: "12 days ago",
+  },
+];
