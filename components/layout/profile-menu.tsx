@@ -66,16 +66,31 @@ function ProfileMenu() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={(event) => {
+              event.preventDefault();
+              router.push("/profile");
+            }}
+          >
             <UserRound className="text-muted-foreground" aria-hidden />
             <span>Profile</span>
           </DropdownMenuItem>
-          <DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={(event) => {
+              event.preventDefault();
+              router.push("/settings");
+            }}
+          >
             <Settings className="text-muted-foreground" aria-hidden />
             <span>Settings</span>
             <DropdownMenuShortcut>⌘,</DropdownMenuShortcut>
           </DropdownMenuItem>
-          <DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={(event) => {
+              event.preventDefault();
+              router.push("/help");
+            }}
+          >
             <CircleHelp className="text-muted-foreground" aria-hidden />
             <span>Help &amp; Support</span>
           </DropdownMenuItem>
