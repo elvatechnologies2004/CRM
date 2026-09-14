@@ -26,6 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { LogCallDialog, type LogCallForm } from "@/components/activities/log-call-dialog";
 import { readStoredCalls, upsertCall, uid } from "@/lib/activity-local";
+import { useCurrentUser } from "@/lib/current-user";
 import { toDayLabel } from "@/lib/date-utils";
 import { callOutcomes } from "@/lib/mock-calls";
 import { cn } from "@/lib/utils";
@@ -70,6 +71,7 @@ function CallsSkeleton() {
 }
 
 function CallsPageClient({ initialCalls, owners }: CallsPageClientProps) {
+  const currentUser = useCurrentUser();
   const [calls, setCalls] = useState<CallRecord[]>(initialCalls);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
@@ -144,7 +146,7 @@ function CallsPageClient({ initialCalls, owners }: CallsPageClientProps) {
       duration: minutes > 0 ? minutes : undefined,
       date: form.date,
       time: form.time,
-      ownerId: "u_1",
+      ownerId: currentUser?.id ?? "",
       ownerName: form.ownerName,
       outcome: "Connected",
       notes: form.notes,

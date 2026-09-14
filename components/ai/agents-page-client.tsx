@@ -49,7 +49,7 @@ function AIAgentsPageClient({ agents, usesLiveData }: AIAgentsPageClientProps) {
           </p>
           {!usesLiveData && (
             <p className="text-xs text-muted-foreground/60 mt-0.5">
-              Showing demo agents — seed database for live data.
+              No agents yet — create your first agent.
             </p>
           )}
         </div>

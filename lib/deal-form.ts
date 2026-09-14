@@ -57,7 +57,7 @@ export function buildDealRecord(data: DealFormData): DealRecord {
     probability,
     expectedRevenue,
     expectedCloseDate: data.expectedCloseDate || now,
-    ownerId: owner?.id ?? data.ownerId ?? "u_1",
+    ownerId: owner?.id ?? data.ownerId ?? "",
     ownerName: owner?.name ?? data.ownerName ?? leadOwners[0].name,
     source: data.source || leadSourceOptions[0],
     description: (data.description ?? "").trim(),

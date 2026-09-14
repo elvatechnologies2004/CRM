@@ -80,7 +80,7 @@ function downloadSampleCsv() {
 }
 
 function parseCsv(text: string, owners: User[]): LeadRecord[] {
-  const owner = owners[0] ?? { id: "u_1", name: "Hussain Ali", role: "", email: "" };
+  const owner = owners[0] ?? { id: "", name: "", role: "", email: "" };
   const rows = text
     .split(/\r?\n/)
     .map((line) => line.trim())

@@ -38,7 +38,7 @@ import {
   upsertContact,
   writeContactTask,
 } from "@/lib/crm-local";
-import { currentUser } from "@/lib/mock-data";
+import { useCurrentUser } from "@/lib/current-user";
 import type {
   CompanyRecord,
   ContactActivity,
@@ -90,6 +90,7 @@ function ContactDetailClient({
   companies,
 }: ContactDetailClientProps) {
   const router = useRouter();
+  const currentUser = useCurrentUser();
   const [contact, setContact] = useState<ContactRecord>(initialContact);
   const [archived, setArchived] = useState(false);
   const [notes, setNotes] = useState(initialNotes);
@@ -163,7 +164,7 @@ function ContactDetailClient({
     const note: LeadNote = {
       id: `n_${Date.now().toString(36)}`,
       body,
-      author: currentUser.name,
+      author: currentUser?.name ?? "",
       createdAt: new Date().toISOString(),
     };
     setNotes((prev) => [note, ...prev]);
@@ -197,7 +198,7 @@ function ContactDetailClient({
       subject,
       body,
       direction: "out",
-      from: currentUser.email,
+      from: currentUser?.email ?? "",
       to: contact.email,
       date: new Date().toISOString(),
     };
@@ -290,7 +291,7 @@ function ContactDetailClient({
           {tab === "emails" && (
             <LeadEmails
               emails={emails}
-              authorEmail={currentUser.email}
+              authorEmail={currentUser?.email ?? ""}
               recipient={contact.email}
               onSend={sendEmail}
             />
@@ -305,7 +306,7 @@ function ContactDetailClient({
           {tab === "notes" && (
             <LeadNotes
               notes={notes}
-              author={currentUser.name}
+              author={currentUser?.name ?? ""}
               onAdd={addNote}
               onUpdate={updateNote}
               onTogglePin={togglePin}

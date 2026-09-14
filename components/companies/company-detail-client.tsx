@@ -32,7 +32,7 @@ import {
   upsertCompany,
   upsertContact,
 } from "@/lib/crm-local";
-import { currentUser } from "@/lib/mock-data";
+import { useCurrentUser } from "@/lib/current-user";
 import type {
   AccountHealth,
   CompanyActivity,
@@ -81,6 +81,7 @@ function CompanyDetailClient({
   health,
 }: CompanyDetailClientProps) {
   const router = useRouter();
+  const currentUser = useCurrentUser();
   const [company, setCompany] = useState<CompanyRecord>(initialCompany);
   const [classified, setClassified] = useState(false);
   const [links, setLinks] = useState<CompanyContactLink[]>(initialLinks);
@@ -173,7 +174,7 @@ function CompanyDetailClient({
     const note: LeadNote = {
       id: `n_${Date.now().toString(36)}`,
       body,
-      author: currentUser.name,
+      author: currentUser?.name ?? "",
       createdAt: new Date().toISOString(),
     };
     setNotes((prev) => [note, ...prev]);
@@ -295,7 +296,7 @@ function CompanyDetailClient({
           {tab === "notes" && (
             <LeadNotes
               notes={notes}
-              author={currentUser.name}
+              author={currentUser?.name ?? ""}
               onAdd={addNote}
               onUpdate={updateNote}
               onTogglePin={togglePin}

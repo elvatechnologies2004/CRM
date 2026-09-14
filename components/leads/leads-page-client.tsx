@@ -401,7 +401,7 @@ function LeadsPageClient({ leads: initialLeads, owners }: LeadsPageClientProps) 
           if (!open) setAddTaskFor(null);
         }}
         owners={owners}
-        defaultOwner={addTaskFor?.ownerName ?? "Hussain Ali"}
+        defaultOwner={addTaskFor?.ownerName ?? ""}
         onSubmit={handleTaskSubmit}
       />
 

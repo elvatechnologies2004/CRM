@@ -46,7 +46,7 @@ const emptyDealForm: DealFormState = {
   name: "",
   value: "",
   stage: "New",
-  ownerName: "Hussain Ali",
+  ownerName: "",
   expectedClose: "",
 };
 
@@ -86,7 +86,7 @@ function NewDealDialog({ open, onOpenChange, owners, onCreated }: NewDealDialogP
       stage,
       probability: probabilityForStage(stage),
       expectedClose: new Date(form.expectedClose || Date.now()).toISOString(),
-      ownerId: owner?.id ?? "u_1",
+      ownerId: owner?.id ?? "",
       ownerName: owner?.name ?? form.ownerName,
       status: stage === "won" ? "Won" : stage === "lost" ? "Lost" : "Open",
     };

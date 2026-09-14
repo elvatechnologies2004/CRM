@@ -239,7 +239,7 @@ function CompaniesPageClient({
         city: row.city ?? "",
         address: "",
         accountStatus: (row.accountStatus as CompanyAccountStatus) || "Prospect",
-        ownerName: owners[0]?.name ?? "Hussain Ali",
+        ownerName: owners[0]?.name ?? "",
         source: "Manual",
         tags: "",
         description: "",

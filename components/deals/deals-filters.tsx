@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { dealMocks } from "@/lib/mock-deals";
 
 export type DealsViewMode = "table" | "pipeline";
 
@@ -26,7 +27,7 @@ export type DealSortOption =
 export interface DealFilterState {
   search: string;
   stage: "all" | "New" | "Qualified" | "Proposal" | "Negotiation" | "Won" | "Lost";
-  owner: "all" | "Hussain Ali" | "Ali Khan" | "Sara Ahmed" | "Zain Malik" | "Ayesha Siddiqui";
+  owner: "all" | string;
   health: "all" | "Healthy" | "Needs Attention" | "At Risk" | "Critical";
   sort: DealSortOption;
 }
@@ -114,11 +115,13 @@ function DealsFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All owners</SelectItem>
-              <SelectItem value="Hussain Ali">Hussain Ali</SelectItem>
-              <SelectItem value="Ali Khan">Ali Khan</SelectItem>
-              <SelectItem value="Sara Ahmed">Sara Ahmed</SelectItem>
-              <SelectItem value="Zain Malik">Zain Malik</SelectItem>
-              <SelectItem value="Ayesha Siddiqui">Ayesha Siddiqui</SelectItem>
+              {Array.from(new Set(dealMocks.map((d) => d.ownerName).filter(Boolean))).map(
+                (owner) => (
+                  <SelectItem key={owner} value={owner}>
+                    {owner}
+                  </SelectItem>
+                )
+              )}
             </SelectContent>
           </Select>
 

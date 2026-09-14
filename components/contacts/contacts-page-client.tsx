@@ -228,7 +228,7 @@ function ContactsPageClient({
         companyId: "",
         companyName: row.companyName ?? "",
         lifecycleStage: "Lead",
-        ownerName: owners[0]?.name ?? "Hussain Ali",
+        ownerName: owners[0]?.name ?? "",
         source: "Manual",
         country: row.country ?? "",
         city: row.city ?? "",
@@ -403,7 +403,7 @@ function ContactsPageClient({
           if (!open) setAddTaskFor(null);
         }}
         owners={owners}
-        defaultOwner={addTaskFor?.ownerName ?? "Hussain Ali"}
+        defaultOwner={addTaskFor?.ownerName ?? ""}
         onSubmit={handleTaskSubmit}
       />
 

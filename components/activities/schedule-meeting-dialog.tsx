@@ -55,7 +55,7 @@ function ScheduleMeetingDialog({ open, onOpenChange, owners, onSubmit }: Schedul
     date: toDateInput(new Date()),
     time: "10:00",
     duration: "30",
-    ownerName: owners[0] ?? "Hussain Ali",
+    ownerName: owners[0] ?? "",
     notes: "",
   });
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +70,7 @@ function ScheduleMeetingDialog({ open, onOpenChange, owners, onSubmit }: Schedul
         date: toDateInput(new Date()),
         time: "10:00",
         duration: "30",
-        ownerName: owners[0] ?? "Hussain Ali",
+        ownerName: owners[0] ?? "",
         notes: "",
       });
       setError(null);

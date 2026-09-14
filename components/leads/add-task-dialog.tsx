@@ -42,7 +42,7 @@ function AddTaskDialog({
   open,
   onOpenChange,
   owners,
-  defaultOwner = "Hussain Ali",
+  defaultOwner = "",
   onSubmit,
 }: AddTaskDialogProps) {
   const [form, setForm] = useState<NewTaskData>({

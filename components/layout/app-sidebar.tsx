@@ -7,7 +7,7 @@ import { Rocket } from "lucide-react";
 import { sidebarFooterNav, sidebarNav } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 import { InitialsAvatar } from "@/components/ui/avatar";
-import { currentUser } from "@/lib/mock-data";
+import { useCurrentUser } from "@/lib/current-user";
 import {
   SIDEBAR_NARROW_WIDTH,
   SIDEBAR_WIDE_WIDTH,
@@ -115,6 +115,9 @@ function SidebarNavList({
 }
 
 function SidebarUserCard({ collapsed }: { collapsed: boolean }) {
+  const currentUser = useCurrentUser();
+  const name = currentUser?.name ?? "Guest";
+  const role = currentUser?.role ?? "Member";
   return (
     <div
       className={cn(
@@ -122,14 +125,14 @@ function SidebarUserCard({ collapsed }: { collapsed: boolean }) {
         collapsed && "justify-center border-transparent p-0"
       )}
     >
-      <InitialsAvatar name={currentUser.name} className="h-8 w-8" />
+      <InitialsAvatar name={name} className="h-8 w-8" />
       {!collapsed && (
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="truncate text-[13px] font-medium text-ink">
-            {currentUser.name}
+            {name}
           </span>
           <span className="truncate text-[11px] text-muted-foreground">
-            {currentUser.role}
+            {role}
           </span>
         </div>
       )}

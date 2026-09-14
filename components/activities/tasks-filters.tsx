@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  taskMocks,
   taskPriorities,
   taskStatuses,
   taskTypes,
@@ -142,7 +143,7 @@ function TasksFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All owners</SelectItem>
-            {["Hussain Ali", "Ali Khan", "Sara Ahmed", "Zain Malik", "Ayesha Siddiqui"].map(
+            {Array.from(new Set(taskMocks.map((t) => t.ownerName).filter(Boolean))).map(
               (owner) => (
                 <SelectItem key={owner} value={owner}>
                   {owner}

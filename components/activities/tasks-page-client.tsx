@@ -17,6 +17,7 @@ import { TasksBoard } from "@/components/activities/tasks-board";
 import { MyTasksView } from "@/components/activities/my-tasks-view";
 import { AddTaskDialog, type TaskFormValues } from "@/components/activities/add-task-dialog";
 import { readStoredTasks, removeTask, uid, upsertTask } from "@/lib/activity-local";
+import { useCurrentUser } from "@/lib/current-user";
 import type { CrmTask } from "@/lib/types";
 
 interface TasksPageClientProps {
@@ -55,7 +56,7 @@ function TasksPageClient({ initialTasks, owners }: TasksPageClientProps) {
   const [addOpen, setAddOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<CrmTask | null>(null);
 
-  const currentUser = "Hussain Ali";
+  const currentUser = useCurrentUser();
 
   useEffect(() => {
     const timer = window.setTimeout(() => setLoading(false), 450);
@@ -186,7 +187,7 @@ function TasksPageClient({ initialTasks, owners }: TasksPageClientProps) {
       type: form.type,
       priority: form.priority,
       status: form.status,
-      ownerId: owners.find((o) => o === form.ownerName) ? `u_${form.ownerName}` : "u_1",
+      ownerId: currentUser?.id ?? "",
       ownerName: form.ownerName,
       dueDate: form.dueDate,
       dueTime: form.dueTime,
@@ -296,12 +297,12 @@ function TasksPageClient({ initialTasks, owners }: TasksPageClientProps) {
                 ids.forEach((id) => {
                   const task = tasks.find((t) => t.id === id);
                   if (task) {
-                    upsertTask({ ...task, ownerId: "u_1", ownerName: currentUser });
+                    upsertTask({ ...task, ownerId: currentUser?.id ?? "", ownerName: currentUser?.name ?? "" });
                   }
                 });
                 setTasks((prev) =>
                   prev.map((t) =>
-                    ids.includes(t.id) ? { ...t, ownerId: "u_1", ownerName: currentUser } : t
+                    ids.includes(t.id) ? { ...t, ownerId: currentUser?.id ?? "", ownerName: currentUser?.name ?? "" } : t
                   )
                 );
                 setToast("Tasks reassigned");
@@ -331,7 +332,7 @@ function TasksPageClient({ initialTasks, owners }: TasksPageClientProps) {
       {view === "mine" && (
         <MyTasksView
           tasks={tasks}
-          currentUser={currentUser}
+          currentUser={currentUser?.name ?? ""}
           onComplete={handleComplete}
           onEdit={openEdit}
           onAddTask={openCreate}

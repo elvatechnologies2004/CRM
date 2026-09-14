@@ -10,7 +10,7 @@ import { ConversationList, type ChannelFilter } from "@/components/inbox/convers
 import { ThreadView } from "@/components/inbox/thread-view";
 import { readStoredConversations, upsertConversation, uid, appendThreadMessage } from "@/lib/inbox-local";
 import { getThread, emailTemplates } from "@/lib/mock-inbox";
-import { leadOwners } from "@/lib/mock-leads";
+import { useCurrentUser } from "@/lib/current-user";
 import type { Conversation, InboxChannel, ThreadMessage } from "@/lib/types";
 
 const channelMap: Record<string, InboxChannel> = {
@@ -20,7 +20,7 @@ const channelMap: Record<string, InboxChannel> = {
   call: "Call",
 };
 
-const ownerNames = leadOwners.map((owner) => owner.name);
+const ownerNames: string[] = [];
 
 interface InboxPageClientProps {
   initialConversations: Conversation[];
@@ -48,6 +48,7 @@ function InboxSkeleton() {
 }
 
 function InboxPageClient({ initialConversations, initialChannel }: InboxPageClientProps) {
+  const currentUser = useCurrentUser();
   const [conversations, setConversations] = useState(initialConversations);
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(initialConversations[0]?.id ?? null);
@@ -137,8 +138,8 @@ function InboxPageClient({ initialConversations, initialChannel }: InboxPageClie
       id: uid("tm"),
       conversationId: activeId,
       direction: "out",
-      authorName: "Hussain Ali",
-      authorEmail: "hussain.ali@finlonexa.com",
+      authorName: currentUser?.name ?? "",
+      authorEmail: currentUser?.email ?? "",
       content,
       channel: activeConversation?.channel ?? "Email",
       sentAt: new Date().toISOString(),
@@ -191,7 +192,7 @@ function InboxPageClient({ initialConversations, initialChannel }: InboxPageClie
       content: template.body
         .replace(/\{\{contact\}\}/g, activeConversation.contactName)
         .replace(/\{\{company\}\}/g, activeConversation.companyName ?? "")
-        .replace(/\{\{owner\}\}/g, "Hussain Ali"),
+        .replace(/\{\{owner\}\}/g, currentUser?.name ?? ""),
       channel: activeConversation.channel,
       sentAt: new Date().toISOString(),
       status: "sent",
@@ -201,7 +202,7 @@ function InboxPageClient({ initialConversations, initialChannel }: InboxPageClie
       ...prev,
       [activeConversation.id]: [...(prev[activeConversation.id] ?? []), message],
     }));
-    setToast("AI draft generated and sent (demo)");
+    setToast("AI draft generated and sent");
   };
 
   if (loading) return <InboxSkeleton />;

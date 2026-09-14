@@ -16,10 +16,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/env";
-import { currentUser } from "@/lib/mock-data";
+import { useCurrentUser } from "@/lib/current-user";
 
 function ProfileMenu() {
   const router = useRouter();
+  const currentUser = useCurrentUser();
+  const name = currentUser?.name ?? "Guest";
+  const role = currentUser?.role ?? "Member";
+  const email = currentUser?.email ?? "";
 
   async function handleSignOut() {
     try {
@@ -41,13 +45,13 @@ function ProfileMenu() {
           className="flex items-center gap-2 rounded-full p-1 outline-none focus-visible:ring-2 focus-visible:ring-ring/50 md:gap-2.5 md:pr-2"
           aria-label="Open profile menu"
         >
-          <InitialsAvatar name={currentUser.name} className="h-8 w-8" />
+           <InitialsAvatar name={name} className="h-8 w-8" />
           <span className="hidden text-left md:flex md:flex-col">
             <span className="text-[13px] font-medium leading-tight text-ink">
-              {currentUser.name}
+              {name}
             </span>
             <span className="text-[11px] leading-tight text-muted-foreground">
-              {currentUser.role}
+              {role}
             </span>
           </span>
           <ChevronDown className="hidden h-3.5 w-3.5 text-muted-foreground md:block" aria-hidden />
@@ -55,9 +59,9 @@ function ProfileMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">
         <DropdownMenuLabel className="flex flex-col gap-0.5">
-          <span className="text-sm font-semibold">{currentUser.name}</span>
+          <span className="text-sm font-semibold">{name}</span>
           <span className="text-xs font-normal text-muted-foreground">
-            {currentUser.email}
+            {email}
           </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

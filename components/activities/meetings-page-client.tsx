@@ -26,6 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScheduleMeetingDialog, type ScheduleMeetingForm } from "@/components/activities/schedule-meeting-dialog";
 import { readStoredMeetings, upsertMeeting, uid } from "@/lib/activity-local";
+import { useCurrentUser } from "@/lib/current-user";
 import { toDayLabel, toShortTime } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
 import type { CrmMeeting, MeetingStatus } from "@/lib/types";
@@ -79,6 +80,7 @@ function MeetingsSkeleton() {
 }
 
 function MeetingsPageClient({ initialMeetings, owners }: MeetingsPageClientProps) {
+  const currentUser = useCurrentUser();
   const [meetings, setMeetings] = useState<CrmMeeting[]>(initialMeetings);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
@@ -155,7 +157,7 @@ function MeetingsPageClient({ initialMeetings, owners }: MeetingsPageClientProps
       date: form.date,
       time: form.time,
       duration: Number(form.duration) || 30,
-      ownerId: "u_1",
+      ownerId: currentUser?.id ?? "",
       ownerName: form.ownerName,
       participants: [],
       status: "scheduled",

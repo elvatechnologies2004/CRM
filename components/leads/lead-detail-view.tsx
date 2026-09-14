@@ -37,7 +37,7 @@ import {
   writeConvertedDeal,
   writePersistedTask,
 } from "@/lib/lead-local";
-import { currentUser } from "@/lib/mock-data";
+import { useCurrentUser } from "@/lib/current-user";
 import type {
   AuthorityLevel,
   BudgetLevel,
@@ -131,6 +131,7 @@ function LeadDetailView({
   initialFiles,
 }: LeadDetailViewProps) {
   const router = useRouter();
+  const currentUser = useCurrentUser();
   const [lead, setLead] = useState(initialLead);
   const [convertedDealId, setConvertedDealId] = useState<string | undefined>(
     initialLead.convertedDealId
@@ -233,7 +234,7 @@ function LeadDetailView({
     const note: LeadNote = {
       id: `n_${Date.now().toString(36)}`,
       body,
-      author: currentUser.name,
+      author: currentUser?.name ?? "",
       createdAt: new Date().toISOString(),
     };
     setNotes((prev) => [note, ...prev]);
@@ -267,7 +268,7 @@ function LeadDetailView({
       subject,
       body,
       direction: "out",
-      from: currentUser.email,
+      from: currentUser?.email ?? "",
       to: lead.email,
       date: new Date().toISOString(),
     };
@@ -348,7 +349,7 @@ function LeadDetailView({
           {tab === "emails" && (
             <LeadEmails
               emails={emails}
-              authorEmail={currentUser.email}
+              authorEmail={currentUser?.email ?? ""}
               recipient={lead.email}
               onSend={sendEmail}
             />
@@ -363,7 +364,7 @@ function LeadDetailView({
           {tab === "notes" && (
             <LeadNotes
               notes={notes}
-              author={currentUser.name}
+              author={currentUser?.name ?? ""}
               onAdd={addNote}
               onUpdate={updateNote}
               onTogglePin={togglePin}

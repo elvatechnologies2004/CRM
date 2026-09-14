@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { CalendarView, type CalendarEntry, type CalendarViewMode } from "@/components/activities/calendar-grid";
 import { NewActivityDialog, type NewActivityForm } from "@/components/activities/new-activity-dialog";
 import { readStoredMeetings, upsertMeeting, readStoredTasks, upsertTask, uid } from "@/lib/activity-local";
+import { useCurrentUser } from "@/lib/current-user";
 import type { CrmMeeting, CrmTask } from "@/lib/types";
 
 interface CalendarPageClientProps {
@@ -46,6 +47,7 @@ function normalizeTask(task: CrmTask): CalendarEntry {
 }
 
 function CalendarPageClient({ initialTasks, initialMeetings }: CalendarPageClientProps) {
+  const currentUser = useCurrentUser();
   const [tasks, setTasks] = useState<CrmTask[]>(initialTasks);
   const [meetings, setMeetings] = useState<CrmMeeting[]>(initialMeetings);
   const [loading, setLoading] = useState(true);
@@ -91,8 +93,8 @@ function CalendarPageClient({ initialTasks, initialMeetings }: CalendarPageClien
         date: form.date,
         time: form.time,
         duration: Number(form.duration) || 30,
-        ownerId: "u_1",
-        ownerName: "Hussain Ali",
+        ownerId: currentUser?.id ?? "",
+        ownerName: currentUser?.name ?? "",
         participants: [],
         status: "scheduled",
         createdAt: new Date().toISOString(),
@@ -106,8 +108,8 @@ function CalendarPageClient({ initialTasks, initialMeetings }: CalendarPageClien
         type: form.kind === "call" ? "Call" : "Meeting",
         priority: "Medium",
         status: "Open",
-        ownerId: "u_1",
-        ownerName: "Hussain Ali",
+        ownerId: currentUser?.id ?? "",
+        ownerName: currentUser?.name ?? "",
         dueDate: `${form.date}T09:00:00.000Z`,
         dueTime: form.time,
         relatedType: "Lead",
