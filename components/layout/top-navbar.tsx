@@ -39,7 +39,7 @@ function TopNavbar({
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-border bg-card/90 px-4 backdrop-blur-sm sm:px-6">
+    <header className="glass sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 px-4 sm:px-6">
       <Button
         variant="ghost"
         size="icon"

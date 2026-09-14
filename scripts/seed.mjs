@@ -46,7 +46,7 @@ const supabase = createClient(url, key, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-const DEMO_ORG = "Relvo Demo";
+const DEMO_ORG = "FinloNexa Demo";
 const RESET = process.argv.includes("--reset");
 
 const PERMISSION_KEYS = [
@@ -67,9 +67,9 @@ const PERMISSION_KEYS = [
 ];
 
 const users = [
-  { email: "hussain@relvo.io", first: "Hussain", last: "Ali", job: "Sales Manager" },
-  { email: "sara@relvo.io", first: "Sara", last: "Ahmed", job: "Account Executive" },
-  { email: "zain@relvo.io", first: "Zain", last: "Malik", job: "SDR" },
+  { email: "hussain@finlonexa.com", first: "Hussain", last: "Ali", job: "Sales Manager" },
+  { email: "sara@finlonexa.com", first: "Sara", last: "Ahmed", job: "Account Executive" },
+  { email: "zain@finlonexa.com", first: "Zain", last: "Malik", job: "SDR" },
 ];
 
 const stages = [
@@ -187,7 +187,7 @@ async function main() {
     }
     const { data: created, error } = await supabase.auth.admin.createUser({
       email: u.email,
-      password: "RelvoDemo2026!",
+      password: "FinloNexaDemo2026!",
       email_confirm: true,
       user_metadata: { first_name: u.first, last_name: u.last, company: DEMO_ORG },
     });
@@ -200,7 +200,7 @@ async function main() {
   if (!orgId) {
     const { data: org, error: orgErr } = await supabase
       .from("organizations")
-      .insert({ name: DEMO_ORG, slug: "relvo-demo", timezone: "UTC", default_currency: "USD" })
+      .insert({ name: DEMO_ORG, slug: "finlonexa-demo", timezone: "UTC", default_currency: "PKR" })
       .select()
       .single();
     if (orgErr) return fail("create org", orgErr);
@@ -587,10 +587,10 @@ async function main() {
     }
   }
 
-  console.log("\nSeeded Relvo Demo workspace:\n");
+  console.log("\nSeeded FinloNexa Demo workspace:\n");
   console.log(`  Org:        ${DEMO_ORG}`);
   console.log(`  Users:      ${users.map((u) => `${u.email} (${u.job})`).join(", ")}`);
-  console.log(`  Password:   RelvoDemo2026!`);
+  console.log(`  Password:   FinloNexaDemo2026!`);
   console.log(`  Companies:  ${companies.length}   Contacts: ${contacts.length}`);
   console.log(`  Leads:      ${leads.length}   Deals: ${deals.length}`);
   console.log(`  Tasks:      ${tasks.length}   AI Agents: 4`);

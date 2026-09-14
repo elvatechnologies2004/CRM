@@ -2,14 +2,14 @@
 
 import type { CompanyRecord, ContactRecord, LeadTask } from "@/lib/types";
 
-const CONTACTS_KEY = "relvo.contacts";
-const COMPANIES_KEY = "relvo.companies";
-const DELETED_CONTACTS_KEY = "relvo.deleted-contacts";
-const DELETED_COMPANIES_KEY = "relvo.deleted-companies";
-const ARCHIVED_CONTACTS_KEY = "relvo.archived-contacts";
-const ARCHIVED_COMPANIES_KEY = "relvo.archived-companies";
-const TASKS_KEY = "relvo.contact-tasks";
-const DEALS_KEY = "relvo.crm-deals";
+const CONTACTS_KEY = "finlonexa.contacts";
+const COMPANIES_KEY = "finlonexa.companies";
+const DELETED_CONTACTS_KEY = "finlonexa.deleted-contacts";
+const DELETED_COMPANIES_KEY = "finlonexa.deleted-companies";
+const ARCHIVED_CONTACTS_KEY = "finlonexa.archived-contacts";
+const ARCHIVED_COMPANIES_KEY = "finlonexa.archived-companies";
+const TASKS_KEY = "finlonexa.contact-tasks";
+const DEALS_KEY = "finlonexa.crm-deals";
 
 function read<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;

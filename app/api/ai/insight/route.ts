@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
         ? null
         : (d.stages as { name: string | null } | null);
       const state = d.won_at ? "Won" : d.lost_at ? "Lost" : "Open";
-      return `- ${d.name ?? "Untitled"}: $${d.value ?? 0} @ ${d.probability ?? 0}% (${state}, stage ${stage?.name ?? "unknown"})`;
+      return `- ${d.name ?? "Untitled"}: Rs ${d.value ?? 0} @ ${d.probability ?? 0}% (${state}, stage ${stage?.name ?? "unknown"})`;
     });
     const leadLines = (leads ?? []).map((l) => {
       const name = l.full_name || l.company_name || "Untitled";

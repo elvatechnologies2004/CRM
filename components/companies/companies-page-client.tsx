@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -232,7 +232,7 @@ function CompaniesPageClient({
         companySize: (row.companySize as CompanyRecord["companySize"]) || "11-50",
         employeeCount: row.employeeCount ?? "",
         annualRevenue: row.annualRevenue ?? "",
-        currency: "USD",
+        currency: "PKR",
         phone: row.phone ?? "",
         email: row.email ?? "",
         country: row.country ?? "",

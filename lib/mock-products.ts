@@ -1,4 +1,4 @@
-import type { CrmProduct, ProductType } from "@/lib/types";
+﻿import type { CrmProduct, ProductType } from "@/lib/types";
 import { iso } from "@/lib/date-utils";
 
 export const productTypes: ProductType[] = ["Product", "Service", "Subscription"];
@@ -75,7 +75,7 @@ export const productMocks: CrmProduct[] = [
     sku: "MIG-001",
     type: "Service",
     category: "Implementation",
-    description: "One-time data migration from legacy systems to Relvo platform.",
+    description: "One-time data migration from legacy systems to finlonexa platform.",
     unitPrice: 4990,
     currency: "USD",
     taxRate: 0.2,

@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   ContactActivity,
   ContactRecord,
   CrmDeal,
@@ -465,16 +465,16 @@ export const contactDeals: Record<string, CrmDeal[]> = {
 
 export const contactEmails: Record<string, LeadEmail[]> = {
   c_001: [
-    { id: "ce_1", subject: "Technology partnership — Techno Solutions", direction: "out", from: "hussain.ali@relvo.io", to: "ahmed@techno.com", date: iso(13, "10:30"), body: "Hi Ahmed,\n\nBased on your interest in automating approvals and reporting, I'd love to walk you through the Relvo enterprise automation suite.\n\nBest,\nHussain" },
-    { id: "ce_2", subject: "Re: Technology partnership", direction: "in", from: "ahmed@techno.com", to: "hussain.ali@relvo.io", date: iso(12, "14:05"), opened: true, body: "Hi Hussain,\n\nThanks for reaching out. Could you share pricing for the starter and growth plans?\n\nRegards,\nAhmed" },
-    { id: "ce_3", subject: "Starter vs Growth — pricing overview", direction: "out", from: "hussain.ali@relvo.io", to: "ahmed@techno.com", date: iso(11, "11:00"), body: "Hi Ahmed,\n\nSharing the pricing overview as requested. Growth plan includes the full automation suite.\n\nBest,\nHussain" },
-    { id: "ce_4", subject: "Implementation timeline confirmed", direction: "out", from: "hussain.ali@relvo.io", to: "ahmed@techno.com", date: iso(0, "09:00"), body: "Hi Ahmed,\n\nConfirming the rollout timeline and onboarding steps for the CRM implementation.\n\nBest,\nHussain" },
+    { id: "ce_1", subject: "Technology partnership — Techno Solutions", direction: "out", from: "hussain.ali@finlonexa.com", to: "ahmed@techno.com", date: iso(13, "10:30"), body: "Hi Ahmed,\n\nBased on your interest in automating approvals and reporting, I'd love to walk you through the finlonexa enterprise automation suite.\n\nBest,\nHussain" },
+    { id: "ce_2", subject: "Re: Technology partnership", direction: "in", from: "ahmed@techno.com", to: "hussain.ali@finlonexa.com", date: iso(12, "14:05"), opened: true, body: "Hi Hussain,\n\nThanks for reaching out. Could you share pricing for the starter and growth plans?\n\nRegards,\nAhmed" },
+    { id: "ce_3", subject: "Starter vs Growth — pricing overview", direction: "out", from: "hussain.ali@finlonexa.com", to: "ahmed@techno.com", date: iso(11, "11:00"), body: "Hi Ahmed,\n\nSharing the pricing overview as requested. Growth plan includes the full automation suite.\n\nBest,\nHussain" },
+    { id: "ce_4", subject: "Implementation timeline confirmed", direction: "out", from: "hussain.ali@finlonexa.com", to: "ahmed@techno.com", date: iso(0, "09:00"), body: "Hi Ahmed,\n\nConfirming the rollout timeline and onboarding steps for the CRM implementation.\n\nBest,\nHussain" },
   ],
   c_002: [
-    { id: "ce_5", subject: "Marketing check-in", direction: "out", from: "ali.khan@relvo.io", to: "sarah@brightwave.com", date: iso(4, "09:20"), body: "Hi Sarah,\n\nWant to see how the analytics suite would fit BrightWave?" },
+    { id: "ce_5", subject: "Marketing check-in", direction: "out", from: "ali.khan@finlonexa.com", to: "sarah@brightwave.com", date: iso(4, "09:20"), body: "Hi Sarah,\n\nWant to see how the analytics suite would fit BrightWave?" },
   ],
   c_003: [
-    { id: "ce_6", subject: "Cloud migration support", direction: "out", from: "sara.ahmed@relvo.io", to: "john@nova.com", date: iso(2, "12:00"), body: "Hi John,\n\nSharing how we support cloud migration projects end-to-end..." },
+    { id: "ce_6", subject: "Cloud migration support", direction: "out", from: "sara.ahmed@finlonexa.com", to: "john@nova.com", date: iso(2, "12:00"), body: "Hi John,\n\nSharing how we support cloud migration projects end-to-end..." },
   ],
 };
 
@@ -497,10 +497,10 @@ export const contactMeetings: Record<string, LeadMeeting[]> = {
   c_001: [
     { id: "cm_1", title: "Discovery call", date: iso(7, "11:00"), time: "11:00 AM", duration: "30 min", kind: "past" },
     { id: "cm_2", title: "Product walkthrough", date: iso(2, "14:00"), time: "2:00 PM", duration: "45 min", kind: "past" },
-    { id: "cm_3", title: "Proposal walkthrough", date: iso(0, "15:00"), time: "3:00 PM", duration: "30 min", kind: "upcoming", join: "https://meet.relvo.io/techno-proposal" },
+    { id: "cm_3", title: "Proposal walkthrough", date: iso(0, "15:00"), time: "3:00 PM", duration: "30 min", kind: "upcoming", join: "https://meet.finlonexa.com/techno-proposal" },
   ],
   c_002: [
-    { id: "cm_4", title: "Intro call", date: iso(5, "14:30"), time: "2:30 PM", duration: "15 min", kind: "upcoming", join: "https://meet.relvo.io/brightwave" },
+    { id: "cm_4", title: "Intro call", date: iso(5, "14:30"), time: "2:30 PM", duration: "15 min", kind: "upcoming", join: "https://meet.finlonexa.com/brightwave" },
   ],
 };
 

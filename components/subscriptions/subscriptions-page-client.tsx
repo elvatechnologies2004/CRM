@@ -48,7 +48,7 @@ function SubscriptionsPageClient({ initialSubscriptions }: SubscriptionsPageClie
               </div>
               <div className="flex shrink-0 items-center gap-3">
                 <p className="text-sm font-semibold tabular-nums text-ink">
-                  {subscription.currency === "USD" ? "$" : subscription.currency}{" "}
+                  {subscription.currency === "PKR" ? "Rs" : subscription.currency}{" "}
                   {subscription.amount.toLocaleString()}
                 </p>
                 <Button size="sm" variant="outline">

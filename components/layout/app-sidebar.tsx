@@ -28,7 +28,7 @@ function SidebarLogo({ collapsed }: { collapsed: boolean }) {
         "flex shrink-0 items-center gap-2.5 rounded-xl px-2 py-1 outline-none transition-colors hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring/50",
         collapsed && "justify-center px-0"
       )}
-      aria-label="Relvo CRM home"
+      aria-label="FinloNexa CRM home"
     >
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-brand-purple text-white shadow-sm">
         <Rocket className="h-4 w-4" aria-hidden />
@@ -36,7 +36,7 @@ function SidebarLogo({ collapsed }: { collapsed: boolean }) {
       {!collapsed && (
         <span className="flex flex-col leading-none">
           <span className="text-[15px] font-bold tracking-tight text-ink">
-            Relvo<span className="text-primary"> CRM</span>
+            FinloNexa<span className="text-primary"> CRM</span>
           </span>
           <span className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
             AI-first workspace
@@ -157,7 +157,7 @@ export function AppSidebar({
           onClick={onMobileClose}
         />
         <aside
-          className="fixed inset-y-0 left-0 z-10 flex w-[264px] flex-col bg-card"
+          className="glass-strong fixed inset-y-0 left-0 z-10 flex w-[264px] flex-col"
           style={{ width: SIDEBAR_WIDE_WIDTH }}
         >
           <div className="flex h-16 shrink-0 items-center border-b border-border px-4">
@@ -175,7 +175,7 @@ export function AppSidebar({
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-border bg-card transition-[width] duration-300 ease-in-out lg:flex"
+          "glass-strong fixed inset-y-0 left-0 z-30 hidden flex-col transition-[width] duration-300 ease-in-out lg:flex"
         )}
         style={{
           width: collapsed ? SIDEBAR_NARROW_WIDTH : SIDEBAR_WIDE_WIDTH,

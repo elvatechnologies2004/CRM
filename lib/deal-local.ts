@@ -2,7 +2,7 @@
 
 import type { DealRecord } from "@/lib/types";
 
-const DEALS_KEY = "relvo.deals";
+const DEALS_KEY = "finlonexa.deals";
 
 function read<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -42,12 +42,12 @@ export function deleteDeal(dealId: string) {
 }
 
 export function readAddedDeals(): Record<string, DealRecord[]> {
-  return read<Record<string, DealRecord[]>>("relvo.deal-tasks", {});
+  return read<Record<string, DealRecord[]>>("finlonexa.deal-tasks", {});
 }
 
 export function writeAddedDeal(category: string, deal: DealRecord) {
   const all = readAddedDeals();
   const list = all[category] ?? [];
   all[category] = [...list, deal];
-  write("relvo.deal-tasks", all);
+  write("finlonexa.deal-tasks", all);
 }

@@ -55,7 +55,7 @@ export const companySizeOptions = [
   "500+",
 ];
 
-export const currencyOptions = ["USD", "PKR", "AED", "SAR", "GBP", "EUR"];
+export const currencyOptions = ["PKR", "USD", "AED", "SAR", "GBP", "EUR"];
 
 export const dealStageLabels: Record<DealStage, DealStageLabel> = {
   new: "New",
@@ -100,8 +100,8 @@ export function probabilityForStage(stage: DealStage): number {
   }
 }
 
-export function formatCurrency(value: number, currency = "USD"): string {
-  return new Intl.NumberFormat("en-US", {
+export function formatCurrency(value: number, currency = "PKR"): string {
+  return new Intl.NumberFormat("en-PK", {
     style: "currency",
     currency,
     maximumFractionDigits: 0,

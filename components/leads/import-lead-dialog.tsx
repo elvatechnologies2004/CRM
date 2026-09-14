@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRef, useState } from "react";
 import {
@@ -110,7 +110,7 @@ function parseCsv(text: string, owners: User[]): LeadRecord[] {
       ownerId: owner.id,
       ownerName: owner.name,
       expectedValue: Number(columns[10]) || 0,
-      currency: "USD",
+      currency: "PKR",
       budget: "Unclear",
       interest: "",
       tags: ["Imported"],

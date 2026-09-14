@@ -34,8 +34,8 @@ function GoalsPageClient({ initialGoals }: GoalsPageClientProps) {
         {goals.map((goal) => {
           const progress = Math.min(Math.round((goal.current / goal.target) * 100), 100);
           const { label, tone } = progressLabel(progress);
-          const displayTarget = goal.currency ? `$${goal.target.toLocaleString()}` : goal.target.toLocaleString();
-          const displayCurrent = goal.currency ? `$${goal.current.toLocaleString()}` : goal.current.toLocaleString();
+          const displayTarget = goal.currency ? `Rs ${goal.target.toLocaleString()}` : goal.target.toLocaleString();
+          const displayCurrent = goal.currency ? `Rs ${goal.current.toLocaleString()}` : goal.current.toLocaleString();
           return (
             <div
               key={goal.id}

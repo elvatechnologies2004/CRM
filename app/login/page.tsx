@@ -17,7 +17,7 @@ export default async function LoginPage({
   return (
     <AuthShell
       title="Welcome back"
-      description="Sign in to your Relvo workspace"
+      description="Sign in to your FinloNexa workspace"
       footer={
         <>
           Don&apos;t have an account?{" "}

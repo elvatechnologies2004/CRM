@@ -4,7 +4,7 @@ export default function PrivacyPage() {
   return (
     <LegalLayout title="Privacy Policy" updated="September 14, 2026 — Draft">
       <p>
-        Relvo (&ldquo;we&rdquo;, &ldquo;us&rdquo;) respects your privacy. This policy explains what we
+        FinloNexa (&ldquo;we&rdquo;, &ldquo;us&rdquo;) respects your privacy. This policy explains what we
         collect, why, and the rights you have over your data.
       </p>
       <h2 className="font-semibold text-ink">What we collect</h2>
@@ -35,10 +35,10 @@ export default function PrivacyPage() {
       <h2 className="font-semibold text-ink">Your rights</h2>
       <p>
         Depending on your jurisdiction you may have rights to access, correct, export, or delete
-        your personal data. Email us at privacy@relvo.app to exercise these rights.
+        your personal data. Email us at privacy@finlonexa.com to exercise these rights.
       </p>
       <p>
-        Contact us via <a href="mailto:privacy@relvo.app" className="text-primary hover:underline">privacy@relvo.app</a>.
+        Contact us via <a href="mailto:privacy@finlonexa.com" className="text-primary hover:underline">privacy@finlonexa.com</a>.
         This policy was drafted for review by legal counsel.
       </p>
     </LegalLayout>

@@ -92,7 +92,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-svh w-full bg-background">
+    <div className="min-h-svh w-full">
       <AppSidebar
         collapsed={collapsed}
         mobileOpen={mobileOpen}

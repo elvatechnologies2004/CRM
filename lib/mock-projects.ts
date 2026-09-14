@@ -1,4 +1,4 @@
-import type { CrmProject, ProjectStatus } from "@/lib/types";
+﻿import type { CrmProject, ProjectStatus } from "@/lib/types";
 import { iso } from "@/lib/date-utils";
 
 export const projectStatuses: ProjectStatus[] = [
@@ -33,7 +33,7 @@ export const projectMocks: CrmProject[] = [
   {
     id: "prj_002",
     name: "ERP Integration",
-    description: "Integrate ERP system with Relvo CRM for data sync.",
+    description: "Integrate ERP system with finlonexa CRM for data sync.",
     customerName: "Skyline Retail",
     companyId: "c_006",
     dealId: "d_006",
@@ -75,7 +75,7 @@ export const projectMocks: CrmProject[] = [
   {
     id: "prj_004",
     name: "Data Migration Project",
-    description: "Migrate legacy customer data to the new Relvo platform.",
+    description: "Migrate legacy customer data to the new finlonexa platform.",
     customerName: "Lotus Digital",
     companyId: "c_009",
     dealId: "d_009",

@@ -5,12 +5,12 @@ export default function TermsPage() {
   return (
     <LegalLayout title="Terms of Service" updated="September 14, 2026 — Draft">
       <p>
-        By using Relvo CRM you agree to these terms. Please read them carefully. These are a draft
+        By using FinloNexa CRM you agree to these terms. Please read them carefully. These are a draft
         and subject to legal review.
       </p>
       <h2 className="font-semibold text-ink">1. The service</h2>
       <p>
-        Relvo provides CRM, automation, and AI-assisted features. You are responsible for the data
+        FinloNexa provides CRM, automation, and AI-assisted features. You are responsible for the data
         you import and the way your organization uses the service.
       </p>
       <h2 className="font-semibold text-ink">2. Your account</h2>
@@ -49,7 +49,7 @@ export default function TermsPage() {
         We may update these terms. Material changes will be announced on the{" "}
         <Link href="/updates" className="text-primary hover:underline">Updates page</Link> or in-app.
       </p>
-      <p>Questions? Contact us at <a href="mailto:legal@relvo.app" className="text-primary hover:underline">legal@relvo.app</a>.</p>
+      <p>Questions? Contact us at <a href="mailto:legal@finlonexa.com" className="text-primary hover:underline">legal@finlonexa.com</a>.</p>
     </LegalLayout>
   );
 }

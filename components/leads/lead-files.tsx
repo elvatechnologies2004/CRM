@@ -70,7 +70,7 @@ function LeadFiles({ files, onAdd, onDelete }: LeadFilesProps) {
       `Size: ${file.size}`,
       `Uploaded: ${formatDate(file.uploadedAt)}`,
       "",
-      "Downloaded from Relvo CRM.",
+      "Downloaded from FinloNexa CRM.",
     ].join("\n");
     const blob = new Blob([payload], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);

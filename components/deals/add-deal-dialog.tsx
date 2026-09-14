@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import { useState } from "react";
@@ -54,7 +54,7 @@ function AddDealDialog({
         stageId: initial.stageId,
         stageName: initial.stageName ?? "New",
         value: String(initial.value ?? ""),
-        currency: initial.currency ?? "USD",
+        currency: initial.currency ?? "PKR",
         probability: String(initial.probability ?? ""),
         expectedCloseDate: initial.expectedCloseDate ?? new Date().toISOString(),
         ownerId: initial.ownerId ?? leadOwners[0].id,

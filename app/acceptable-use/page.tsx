@@ -15,7 +15,7 @@ export default function AcceptableUsePage() {
   return (
     <LegalLayout title="Acceptable Use Policy" updated="September 14, 2026 — Draft">
       <p>
-        This policy states what you may not do while using Relvo. Breach may result in suspension
+        This policy states what you may not do while using FinloNexa. Breach may result in suspension
         or termination of your account.
       </p>
       <h2 className="font-semibold text-ink">Prohibited activities</h2>
@@ -27,7 +27,7 @@ export default function AcceptableUsePage() {
       <h2 className="font-semibold text-ink">Reporting abuse</h2>
       <p>
         If you believe someone is violating this policy, report it to{" "}
-        <a href="mailto:abuse@relvo.app" className="text-primary hover:underline">abuse@relvo.app</a>.
+        <a href="mailto:abuse@finlonexa.com" className="text-primary hover:underline">abuse@finlonexa.com</a>.
       </p>
     </LegalLayout>
   );

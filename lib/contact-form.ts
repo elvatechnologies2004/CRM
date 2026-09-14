@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   CompanyAccountStatus,
   CompanyIndustry,
   CompanyRecord,
@@ -154,7 +154,7 @@ export const emptyCompanyForm: CompanyFormData = {
   companySize: "11–50",
   employeeCount: "",
   annualRevenue: "",
-  currency: "USD",
+  currency: "PKR",
   phone: "",
   email: "",
   country: "",

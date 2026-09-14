@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { CalendarDays, ExternalLink, Plus, Trash2, Video } from "lucide-react";
@@ -42,7 +42,7 @@ function LeadMeetings({ meetings, onAdd, onDelete }: LeadMeetingsProps) {
       time: timeLabel,
       duration: form.duration,
       kind: "upcoming",
-      join: "https://meet.relvo.io/generated",
+      join: "https://meet.finlonexa.com/generated",
     });
     setForm({ title: "", date: "", time: "10:00", duration: "30 min" });
     setComposing(false);

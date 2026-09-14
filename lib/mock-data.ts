@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   DealRisk,
   DealStageOverview,
   Lead,
@@ -16,7 +16,7 @@ export const currentUser: User = {
   id: "usr_001",
   name: "Hussain Ali",
   role: "Product Manager",
-  email: "hussain.ali@relvo.io",
+  email: "hussain.ali@finlonexa.com",
 };
 
 export const kpiStats: StatCardData[] = [

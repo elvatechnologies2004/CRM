@@ -14,6 +14,7 @@ import {
   FileText,
   FilterX,
   FolderKanban,
+  Globe,
   Headphones,
   HeartHandshake,
   Inbox,
@@ -22,12 +23,14 @@ import {
   Mail,
   Megaphone,
   MessageCircle,
+  Network,
   Package,
   PenSquare,
   Phone,
   Plug,
   Rocket,
   Settings,
+  Shuffle,
   Smartphone,
   Sparkles,
   Target,
@@ -35,6 +38,7 @@ import {
   UserPlus,
   Video,
   Wallet,
+  Workflow,
   type LucideIcon,
 } from "lucide-react";
 
@@ -83,12 +87,21 @@ export const sidebarNav: SidebarNavSection[] = [
     ],
   },
   {
+    title: "Enterprise",
+    items: [
+      { label: "Hierarchy", href: "/admin/hierarchy", icon: Network },
+      { label: "Territories", href: "/admin/territories", icon: Globe },
+      { label: "Lead Routing", href: "/admin/routing", icon: Shuffle },
+      { label: "Workflows", href: "/admin/workflows", icon: Workflow },
+      { label: "Approvals", href: "/approvals", icon: BadgeCheck },
+    ],
+  },
+  {
     title: "Automation & AI",
     items: [
       { label: "Automations", href: "/automations", icon: ArrowRightLeft },
       { label: "AI Assistant", href: "/ai", icon: Sparkles },
       { label: "AI Agents", href: "/ai/agents", icon: Bot },
-      { label: "Approvals", href: "/approvals", icon: BadgeCheck },
       { label: "AI Insights", href: "/ai/insights", icon: PenSquare },
     ],
   },

@@ -1,4 +1,4 @@
-import "server-only";
+﻿import "server-only";
 
 import {
   getActiveOrgId,
@@ -56,7 +56,7 @@ export function mapCompanyRow(row: CompanyRow, owners: Record<string, { name: st
     companySize: row.company_size ?? "",
     employeeCount: row.employee_count ?? 0,
     annualRevenue: row.annual_revenue != null ? String(row.annual_revenue) : "",
-    currency: row.currency ?? "USD",
+    currency: row.currency ?? "PKR",
     phone: row.phone ?? "",
     email: row.email ?? "",
     country: row.country ?? "",
@@ -172,7 +172,7 @@ export async function createCompany(input: CompanyCreateInput): Promise<CompanyR
       company_size: input.companySize ?? null,
       employee_count: input.employeeCount ?? null,
       annual_revenue: input.annualRevenue ?? null,
-      currency: input.currency ?? "USD",
+      currency: input.currency ?? "PKR",
       phone: input.phone ?? null,
       email: input.email ?? null,
       country: input.country ?? null,

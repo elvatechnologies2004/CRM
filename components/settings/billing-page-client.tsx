@@ -45,10 +45,10 @@ const PLAN_FEATURES: Record<string, string[]> = {
 };
 
 function formatPrice(cents: number, cycle: BillingCycle): string {
-  if (cents === 0) return "$0";
+  if (cents === 0) return "Rs 0";
   const yearlyHint = cycle === "yearly" ? "" : "";
   void yearlyHint;
-  return `$${(cents / 100).toFixed(2)}`;
+  return `Rs ${(cents / 100).toFixed(2)}`;
 }
 
 function planAction(

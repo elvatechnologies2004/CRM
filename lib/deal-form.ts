@@ -1,4 +1,4 @@
-import type { DealRecord, DealFormData, DealEditFormData } from "@/lib/types";
+﻿import type { DealRecord, DealFormData, DealEditFormData } from "@/lib/types";
 import { leadOwners, leadSourceOptions } from "@/lib/mock-leads";
 export type { DealFormData, DealEditFormData };
 export const emptyDealForm: DealFormData = {
@@ -12,7 +12,7 @@ export const emptyDealForm: DealFormData = {
   stageId: "new",
   stageName: "New",
   value: "",
-  currency: "USD",
+  currency: "PKR",
   probability: "",
   expectedCloseDate: new Date().toISOString(),
   ownerId: leadOwners[0].id,
@@ -53,7 +53,7 @@ export function buildDealRecord(data: DealFormData): DealRecord {
     stageId,
     stageName: stageNames[stageId] ?? "New",
     value,
-    currency: data.currency || "USD",
+    currency: data.currency || "PKR",
     probability,
     expectedRevenue,
     expectedCloseDate: data.expectedCloseDate || now,

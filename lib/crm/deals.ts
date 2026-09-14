@@ -1,4 +1,4 @@
-import "server-only";
+﻿import "server-only";
 
 import {
   getActiveOrgId,
@@ -82,7 +82,7 @@ export function mapDealRow(
     stageId: row.stage_id ?? "",
     stageName: embed.pipeline_stages?.name ?? "New",
     value: row.value ? Number(row.value) : 0,
-    currency: row.currency ?? "USD",
+    currency: row.currency ?? "PKR",
     probability: row.probability ?? 0,
     expectedRevenue: row.expected_revenue ? Number(row.expected_revenue) : row.value ? Number(row.value) * (row.probability ?? 0) / 100 : 0,
     expectedCloseDate: row.expected_close_date ? toIsoDate(row.expected_close_date) : "",
@@ -290,7 +290,7 @@ export async function createDeal(input: DealCreateInput): Promise<DealRecord | n
       pipeline_id: pipelineId,
       stage_id: stageId,
       value,
-      currency: input.currency ?? "USD",
+      currency: input.currency ?? "PKR",
       probability: prob,
       expected_revenue: Math.round(value * prob) / 100,
       expected_close_date: input.expectedCloseDate ?? null,

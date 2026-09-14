@@ -2,9 +2,9 @@
 
 import type { LeadTask } from "@/lib/types";
 
-const STORAGE_KEY = "relvo.converted-deals";
-const TASKS_KEY = "relvo.lead-tasks";
-const DELETED_KEY = "relvo.deleted-leads";
+const STORAGE_KEY = "finlonexa.converted-deals";
+const TASKS_KEY = "finlonexa.lead-tasks";
+const DELETED_KEY = "finlonexa.deleted-leads";
 
 export function readDeletedLeadIds(): string[] {
   if (typeof window === "undefined") {

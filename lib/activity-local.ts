@@ -1,8 +1,8 @@
 import type { CrmTask, CrmMeeting, CallRecord } from "@/lib/types";
 
-const TASKS_KEY = "relvo.tasks";
-const MEETINGS_KEY = "relvo.meetings";
-const CALLS_KEY = "relvo.calls";
+const TASKS_KEY = "finlonexa.tasks";
+const MEETINGS_KEY = "finlonexa.meetings";
+const CALLS_KEY = "finlonexa.calls";
 
 function safeRead<T>(key: string, fallback: T[]): T[] {
   if (typeof window === "undefined") return fallback;

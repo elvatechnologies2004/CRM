@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   LeadActivity,
   LeadEmail,
   LeadFile,
@@ -13,11 +13,11 @@ import type {
 import { toDayLabel, toShortTime } from "@/lib/date-utils";
 
 export const leadOwners: User[] = [
-  { id: "u_1", name: "Hussain Ali", role: "Sales Manager", email: "hussain.ali@relvo.io" },
-  { id: "u_2", name: "Ali Khan", role: "Sales Executive", email: "ali.khan@relvo.io" },
-  { id: "u_3", name: "Sara Ahmed", role: "Account Executive", email: "sara.ahmed@relvo.io" },
-  { id: "u_4", name: "Zain Malik", role: "SDR", email: "zain.malik@relvo.io" },
-  { id: "u_5", name: "Ayesha Siddiqui", role: "Sales Executive", email: "ayesha.siddiqui@relvo.io" },
+  { id: "u_1", name: "Hussain Ali", role: "Sales Manager", email: "hussain.ali@finlonexa.com" },
+  { id: "u_2", name: "Ali Khan", role: "Sales Executive", email: "ali.khan@finlonexa.com" },
+  { id: "u_3", name: "Sara Ahmed", role: "Account Executive", email: "sara.ahmed@finlonexa.com" },
+  { id: "u_4", name: "Zain Malik", role: "SDR", email: "zain.malik@finlonexa.com" },
+  { id: "u_5", name: "Ayesha Siddiqui", role: "Sales Executive", email: "ayesha.siddiqui@finlonexa.com" },
 ];
 
 export const leadSourceOptions: LeadSourceOption[] = [
@@ -508,36 +508,36 @@ const leadTasks: Record<string, LeadTask[]> = {
 const leadMeetings: Record<string, LeadMeeting[]> = {
   l_001: [
     { id: "m_1", title: "Discovery call", date: iso(7, "11:00"), time: "11:00 AM", duration: "30 min", kind: "past" },
-    { id: "m_2", title: "Product walkthrough", date: iso(2, "14:00"), time: "2:00 PM", duration: "45 min", kind: "upcoming", join: "https://meet.relvo.io/ahmed-khan" },
-    { id: "m_3", title: "Proposal walkthrough", date: iso(5, "15:00"), time: "3:00 PM", duration: "30 min", kind: "upcoming", join: "https://meet.relvo.io/techno-proposal" },
+    { id: "m_2", title: "Product walkthrough", date: iso(2, "14:00"), time: "2:00 PM", duration: "45 min", kind: "upcoming", join: "https://meet.finlonexa.com/ahmed-khan" },
+    { id: "m_3", title: "Proposal walkthrough", date: iso(5, "15:00"), time: "3:00 PM", duration: "30 min", kind: "upcoming", join: "https://meet.finlonexa.com/techno-proposal" },
   ],
   l_006: [
     { id: "m_4", title: "Proposal walkthrough", date: iso(1, "18:00"), time: "6:00 PM", duration: "40 min", kind: "past" },
-    { id: "m_5", title: "Contract review", date: iso(3, "13:00"), time: "1:00 PM", duration: "30 min", kind: "upcoming", join: "https://meet.relvo.io/skyline" },
+    { id: "m_5", title: "Contract review", date: iso(3, "13:00"), time: "1:00 PM", duration: "30 min", kind: "upcoming", join: "https://meet.finlonexa.com/skyline" },
   ],
   l_009: [
     { id: "m_6", title: "Intro call", date: iso(8, "10:30"), time: "10:30 AM", duration: "20 min", kind: "past" },
-    { id: "m_7", title: "Technical deep-dive", date: iso(4, "16:00"), time: "4:00 PM", duration: "45 min", kind: "upcoming", join: "https://meet.relvo.io/lotus-tech" },
+    { id: "m_7", title: "Technical deep-dive", date: iso(4, "16:00"), time: "4:00 PM", duration: "45 min", kind: "upcoming", join: "https://meet.finlonexa.com/lotus-tech" },
   ],
-  l_002: [{ id: "m_8", title: "Intro call", date: iso(5, "14:30"), time: "2:30 PM", duration: "15 min", kind: "upcoming", join: "https://meet.relvo.io/brightwave" }],
+  l_002: [{ id: "m_8", title: "Intro call", date: iso(5, "14:30"), time: "2:30 PM", duration: "15 min", kind: "upcoming", join: "https://meet.finlonexa.com/brightwave" }],
   l_010: [{ id: "m_9", title: "Intro call", date: iso(3, "11:50"), time: "11:50 AM", duration: "18 min", kind: "past" }],
 };
 
 const leadEmails: Record<string, LeadEmail[]> = {
   l_001: [
-    { id: "e_1", subject: "Technology partnership — Techno Solutions", direction: "out", from: "hussain.ali@relvo.io", to: "ahmed.khan@technosolutions.com", date: iso(13, "10:30"), body: "Hi Ahmed,\n\nGreat connecting on LinkedIn. Based on your interest in automating approvals and reporting pipelines, I'd love to walk you through the Relvo enterprise automation suite.\n\nWould Tuesday or Wednesday next week work for a 30-minute call?\n\nBest,\nHussain" },
-    { id: "e_2", subject: "Re: Technology partnership", direction: "in", from: "ahmed.khan@technosolutions.com", to: "hussain.ali@relvo.io", date: iso(12, "14:05"), opened: true, body: "Hi Hussain,\n\nThanks for reaching out. Wednesday works well. Could you also share pricing for the starter and growth plans?\n\nRegards,\nAhmed" },
-    { id: "e_3", subject: "Starter vs Growth — pricing overview", direction: "out", from: "hussain.ali@relvo.io", to: "ahmed.khan@technosolutions.com", date: iso(11, "11:00"), body: "Hi Ahmed,\n\nSharing the pricing overview as requested. Growth plan includes the full automation suite and priority onboarding.\n\nLooking forward to Wednesday!\n\nBest,\nHussain" },
+    { id: "e_1", subject: "Technology partnership — Techno Solutions", direction: "out", from: "hussain.ali@finlonexa.com", to: "ahmed.khan@technosolutions.com", date: iso(13, "10:30"), body: "Hi Ahmed,\n\nGreat connecting on LinkedIn. Based on your interest in automating approvals and reporting pipelines, I'd love to walk you through the finlonexa enterprise automation suite.\n\nWould Tuesday or Wednesday next week work for a 30-minute call?\n\nBest,\nHussain" },
+    { id: "e_2", subject: "Re: Technology partnership", direction: "in", from: "ahmed.khan@technosolutions.com", to: "hussain.ali@finlonexa.com", date: iso(12, "14:05"), opened: true, body: "Hi Hussain,\n\nThanks for reaching out. Wednesday works well. Could you also share pricing for the starter and growth plans?\n\nRegards,\nAhmed" },
+    { id: "e_3", subject: "Starter vs Growth — pricing overview", direction: "out", from: "hussain.ali@finlonexa.com", to: "ahmed.khan@technosolutions.com", date: iso(11, "11:00"), body: "Hi Ahmed,\n\nSharing the pricing overview as requested. Growth plan includes the full automation suite and priority onboarding.\n\nLooking forward to Wednesday!\n\nBest,\nHussain" },
   ],
   l_009: [
-    { id: "e_4", subject: "Intro email", direction: "out", from: "sara.ahmed@relvo.io", to: "hina@lotusdigital.ae", date: iso(17, "10:00"), body: "Hi Hina,\n\nJohn mentioned your team is scaling lead management across agency accounts..." },
-    { id: "e_5", subject: "Re: Intro email", direction: "in", from: "hina@lotusdigital.ae", to: "sara.ahmed@relvo.io", date: iso(8, "10:40"), opened: true, body: "Hi Sara,\n\nWe'd need white-label capability and API access. Attaching our current pipeline export for reference." },
+    { id: "e_4", subject: "Intro email", direction: "out", from: "sara.ahmed@finlonexa.com", to: "hina@lotusdigital.ae", date: iso(17, "10:00"), body: "Hi Hina,\n\nJohn mentioned your team is scaling lead management across agency accounts..." },
+    { id: "e_5", subject: "Re: Intro email", direction: "in", from: "hina@lotusdigital.ae", to: "sara.ahmed@finlonexa.com", date: iso(8, "10:40"), opened: true, body: "Hi Sara,\n\nWe'd need white-label capability and API access. Attaching our current pipeline export for reference." },
   ],
   l_006: [
-    { id: "e_6", subject: "Proposal — Omnichannel commerce", direction: "out", from: "hussain.ali@relvo.io", to: "omar@skylineretail.com", date: iso(3, "11:00"), body: "Hi Omar,\n\nAttached is the proposal for the unified omnichannel commerce rollout..." },
+    { id: "e_6", subject: "Proposal — Omnichannel commerce", direction: "out", from: "hussain.ali@finlonexa.com", to: "omar@skylineretail.com", date: iso(3, "11:00"), body: "Hi Omar,\n\nAttached is the proposal for the unified omnichannel commerce rollout..." },
   ],
-  l_002: [{ id: "e_7", subject: "Marketing check-in", direction: "out", from: "ali.khan@relvo.io", to: "sarah.malik@brightwave.com", date: iso(4, "09:20"), body: "Hi Sarah,\n\nFollowing up on the download — want to see how the analytics suite would fit BrightWave?" }],
-  l_003: [{ id: "e_8", subject: "Cloud migration support", direction: "out", from: "sara.ahmed@relvo.io", to: "john.smith@novasystems.io", date: iso(2, "12:00"), body: "Hi John,\n\nSharing how we support cloud migration projects end-to-end..." }],
+  l_002: [{ id: "e_7", subject: "Marketing check-in", direction: "out", from: "ali.khan@finlonexa.com", to: "sarah.malik@brightwave.com", date: iso(4, "09:20"), body: "Hi Sarah,\n\nFollowing up on the download — want to see how the analytics suite would fit BrightWave?" }],
+  l_003: [{ id: "e_8", subject: "Cloud migration support", direction: "out", from: "sara.ahmed@finlonexa.com", to: "john.smith@novasystems.io", date: iso(2, "12:00"), body: "Hi John,\n\nSharing how we support cloud migration projects end-to-end..." }],
 };
 
 const leadWhatsApp: Record<string, LeadWhatsAppMessage[]> = {

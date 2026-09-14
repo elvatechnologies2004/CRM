@@ -13,11 +13,11 @@ export interface WelcomeTemplateData {
 }
 
 export function renderWelcomeTemplate(data: WelcomeTemplateData): { subject: string; html: string } {
-  const subject = "Welcome to Relvo CRM";
+  const subject = "Welcome to FinloNexa CRM";
   const html = `
     <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#1a202c">
       <h1 style="color:#111827">Hello ${escapeHtml(data.name)}</h1>
-      <p>Your Relvo CRM workspace is ready. Start with your first lead, contact, company or deal.</p>
+      <p>Your FinloNexa CRM workspace is ready. Start with your first lead, contact, company or deal.</p>
       <p><a href="${escapeHtml(data.loginUrl)}" style="background:#2563eb;color:#ffffff;padding:10px 18px;border-radius:6px;text-decoration:none">Open your workspace →</a></p>
       <p style="color:#6b7280;font-size:12px">You're receiving this because an account was created for you. If this wasn't you, you can delete it in your workspace settings.</p>
     </div>`;
@@ -31,7 +31,7 @@ export interface TrialReminderTemplateData {
 }
 
 export function renderTrialReminderTemplate(data: TrialReminderTemplateData): { subject: string; html: string } {
-  const subject = `Your Relvo trial ends in ${data.daysLeft} day${data.daysLeft === 1 ? "" : "s"}`;
+  const subject = `Your trial ends in ${data.daysLeft} day${data.daysLeft === 1 ? "" : "s"}`;
   const html = `
     <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#1a202c">
       <h1 style="color:#111827">Hi ${escapeHtml(data.name)}</h1>
@@ -66,7 +66,7 @@ export interface InvoiceFailedTemplateData {
 }
 
 export function renderInvoiceFailedTemplate(data: InvoiceFailedTemplateData): { subject: string; html: string } {
-  const subject = "Action needed: your Relvo payment did not go through";
+  const subject = "Action needed: your payment did not go through";
   const html = `
     <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#1a202c">
       <h1 style="color:#111827">We couldn't charge your card</h1>
@@ -83,7 +83,7 @@ export interface BetaApprovedTemplateData {
 }
 
 export function renderBetaApprovedTemplate(data: BetaApprovedTemplateData): { subject: string; html: string } {
-  const subject = "You're in — Relvo beta access approved";
+  const subject = "You're in — FinloNexa CRM beta access approved";
   const html = `
     <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#1a202c">
       <h1 style="color:#111827">Welcome to the beta 🎉</h1>
@@ -93,9 +93,22 @@ export function renderBetaApprovedTemplate(data: BetaApprovedTemplateData): { su
   return { subject, html };
 }
 
-/**
- * Escape HTML entities for user-provided strings (never inject raw data).
- */
+export interface GenericUpdateTemplateData {
+  name: string;
+  message: string;
+}
+
+export function renderGenericUpdateTemplate(data: GenericUpdateTemplateData): { subject: string; html: string } {
+  const subject = "You have an update in FinloNexa CRM";
+  const html = `
+    <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#1a202c">
+      <h1 style="color:#111827">Hi ${escapeHtml(data.name)}</h1>
+      <p>${escapeHtml(data.message)}</p>
+      <p style="color:#6b7280;font-size:12px">You're receiving this because an automation rule triggered an email.</p>
+    </div>`;
+  return { subject, html };
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -110,14 +123,16 @@ export type EmailTemplateKey =
   | "trial_reminder"
   | "invoice_paid"
   | "invoice_failed"
-  | "beta_approved";
+  | "beta_approved"
+  | "generic_update";
 
 export type EmailTemplateData =
   | WelcomeTemplateData
   | TrialReminderTemplateData
   | InvoicePaidTemplateData
   | InvoiceFailedTemplateData
-  | BetaApprovedTemplateData;
+  | BetaApprovedTemplateData
+  | GenericUpdateTemplateData;
 
 export interface RenderedEmail {
   subject: string;
@@ -133,10 +148,12 @@ export const EMAIL_TEMPLATES: {
   invoice_paid: TemplateRenderer<InvoicePaidTemplateData>;
   invoice_failed: TemplateRenderer<InvoiceFailedTemplateData>;
   beta_approved: TemplateRenderer<BetaApprovedTemplateData>;
+  generic_update: TemplateRenderer<GenericUpdateTemplateData>;
 } = {
   welcome: renderWelcomeTemplate,
   trial_reminder: renderTrialReminderTemplate,
   invoice_paid: renderInvoicePaidTemplate,
   invoice_failed: renderInvoiceFailedTemplate,
   beta_approved: renderBetaApprovedTemplate,
+  generic_update: renderGenericUpdateTemplate,
 };

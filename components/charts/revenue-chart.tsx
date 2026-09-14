@@ -133,7 +133,7 @@ function RevenueChart({ data }: RevenueChartProps = {}) {
                 axisLine={false}
                 tick={axisTickProps}
                 tickMargin={6}
-                tickFormatter={(value: number) => `$${(value / 1000).toFixed(0)}k`}
+                tickFormatter={(value: number) => `Rs ${(value / 1000).toFixed(0)}k`}
                 width={44}
               />
               <Tooltip

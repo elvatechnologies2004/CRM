@@ -54,7 +54,7 @@ export class ResendProvider implements EmailProvider {
 
   async send(input: SendEmailInput): Promise<SendEmailResult> {
     const apiKey = process.env.RESEND_API_KEY;
-    const from = process.env.RESEND_FROM_EMAIL ?? "Relvo CRM <no-reply@relvo.app>";
+    const from = process.env.RESEND_FROM_EMAIL ?? "FinloNexa CRM <no-reply@finlonexa.com>";
     if (!apiKey) {
       return { ok: false, error: "RESEND_API_KEY is not configured." };
     }

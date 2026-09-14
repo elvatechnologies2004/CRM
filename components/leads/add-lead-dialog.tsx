@@ -305,7 +305,7 @@ function AddLeadDialog({
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="lead-value">Expected value (USD)</Label>
+                <Label htmlFor="lead-value">Expected value (PKR)</Label>
                 <Input
                   id="lead-value"
                   type="number"

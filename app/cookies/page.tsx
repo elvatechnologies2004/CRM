@@ -4,7 +4,7 @@ export default function CookiesPage() {
   return (
     <LegalLayout title="Cookie Policy" updated="September 14, 2026 — Draft">
       <p>
-        This policy explains how Relvo uses cookies and similar technologies. We aim to use the
+        This policy explains how FinloNexa uses cookies and similar technologies. We aim to use the
         minimum necessary.
       </p>
       <h2 className="font-semibold text-ink">Essential cookies</h2>
@@ -24,7 +24,7 @@ export default function CookiesPage() {
         sign-in and other core functionality.
       </p>
       <p>
-        Questions? Contact us at <a href="mailto:privacy@relvo.app" className="text-primary hover:underline">privacy@relvo.app</a>.
+        Questions? Contact us at <a href="mailto:privacy@finlonexa.com" className="text-primary hover:underline">privacy@finlonexa.com</a>.
       </p>
     </LegalLayout>
   );

@@ -205,7 +205,7 @@ function buildRevenueSeries(wonAt: string[]): RevenuePoint[] {
 }
 
 function formatCompact(n: number): string {
-  if (n >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;
-  if (n >= 1e3) return `$${Math.round(n / 1e3)}K`;
-  return `$${Math.round(n)}`;
+  if (n >= 1e6) return `Rs ${(n / 1e6).toFixed(1)}M`;
+  if (n >= 1e3) return `Rs ${Math.round(n / 1e3)}K`;
+  return `Rs ${Math.round(n)}`;
 }

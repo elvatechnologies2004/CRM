@@ -1,6 +1,6 @@
 # Operations, Monitoring & Release Guide
 
-> Step 110 / Phase 4. Living internal doc for anyone operating Relvo.
+> Step 110 / Phase 4. Living internal doc for anyone operating FinloNexa.
 
 ## Health & monitoring
 

@@ -119,7 +119,7 @@ function NewDealDialog({ open, onOpenChange, owners, onCreated }: NewDealDialogP
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="deal-value">
-              Value (USD) <span className="text-danger">*</span>
+              Value (PKR) <span className="text-danger">*</span>
             </Label>
             <Input
               id="deal-value"

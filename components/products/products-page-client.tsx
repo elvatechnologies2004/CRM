@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 
@@ -141,7 +141,7 @@ function AddProductDialog({ open, onOpenChange, onSubmit }: AddProductDialogProp
       unitPrice: Number(form.unitPrice) || 0,
       category: form.category,
       status: form.status,
-      currency: "USD",
+      currency: "PKR",
       taxRate: 0,
       createdAt: new Date().toISOString(),
     });

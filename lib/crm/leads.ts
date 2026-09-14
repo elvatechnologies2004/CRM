@@ -1,8 +1,10 @@
-import "server-only";
+﻿import "server-only";
 
 import { getActiveOrgId, toIso, buildFullName, uuidOrNull, fetchOwnerIndex, getOrgIdOrThrow, PAGE_SIZE } from "@/lib/crm/base";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
+import { autoRouteLead, type RouterLead } from "@/lib/routing/routing";
+import { dispatchWorkflowEvent } from "@/lib/workflows/dispatch";
 import type { LeadRecord, LeadQualification, LeadStatus, LeadSourceOption, LeadNote, LeadActivity } from "@/lib/types";
 
 export interface LeadQuery {
@@ -48,6 +50,10 @@ interface LeadRow {
   next_follow_up_at: string | null;
   converted_deal_id: string | null;
   tags: string[] | null;
+  industry: string | null;
+  company_size: string | null;
+  account_type: string | null;
+  territory_id: string | null;
 }
 
 export function mapLeadRow(row: LeadRow, owners: Record<string, { name: string }>): LeadRecord {
@@ -72,7 +78,7 @@ export function mapLeadRow(row: LeadRow, owners: Record<string, { name: string }
     ownerId: row.owner_id ?? "",
     ownerName: owner?.name ?? "",
     expectedValue: row.expected_value ? Number(row.expected_value) : 0,
-    currency: row.currency ?? "USD",
+    currency: row.currency ?? "PKR",
     budget: row.budget ?? "Estimated",
     interest: row.interested_product ?? "",
     tags: row.tags ?? [],
@@ -222,7 +228,7 @@ export async function createLead(input: LeadCreateInput): Promise<LeadRecord | n
       score: input.score ?? 0,
       owner_id: input.ownerId || user?.id || null,
       expected_value: input.expectedValue ?? null,
-      currency: input.currency ?? "USD",
+      currency: input.currency ?? "PKR",
       budget: input.budget ?? "Unclear",
       interested_product: input.interest || null,
       tags: input.tags ?? [],
@@ -241,7 +247,41 @@ export async function createLead(input: LeadCreateInput): Promise<LeadRecord | n
   }
 
   const owners = await fetchOwnerIndex(supabase, organizationId);
-  return mapLeadRow(data as unknown as LeadRow, owners);
+  const lead = mapLeadRow(data as unknown as LeadRow, owners);
+
+  // Step 123 — auto-route new leads and fan out workflow events
+  // (fire-and-forget so a slow route never blocks the create path).
+  void (async () => {
+    try {
+      const subject: RouterLead = {
+        id: data.id,
+        organization_id: organizationId,
+        source: data.source ?? null,
+        country: data.country ?? null,
+        city: data.city ?? null,
+        industry: data.industry ?? null,
+        company_size: data.company_size ?? null,
+        account_type: data.account_type ?? null,
+        interested_product: data.interested_product ?? null,
+        expected_value: data.expected_value ?? null,
+        score: data.score ?? null,
+        owner_id: data.owner_id ?? null,
+        company_name: data.company_name ?? null,
+      };
+      await dispatchWorkflowEvent("lead.created", {
+        subject_type: "leads",
+        subject_id: data.id,
+        ...subject,
+      });
+      if (!input.ownerId && data.owner_id) {
+        await autoRouteLead(subject);
+      }
+    } catch {
+      // routing/workflows must never break lead creation
+    }
+  })();
+
+  return lead;
 }
 
 export interface LeadUpdateInput extends Partial<LeadCreateInput> {
@@ -318,13 +358,19 @@ export async function archiveLead(id: string): Promise<boolean> {
 /** Convert a lead to a deal via the transactional RPC (Steps 52/57). */
 export async function convertLead(id: string): Promise<string | null> {
   const supabase = await createSupabaseServerClient();
-  await getOrgIdOrThrow(await getActiveOrgId(supabase));
+  const organizationId = await getOrgIdOrThrow(await getActiveOrgId(supabase));
 
   const { data, error } = await supabase.rpc("convert_lead", { p_lead_id: id });
   if (error) {
     console.error("[leads] convert failed", error.message);
     return null;
   }
+
+  void dispatchWorkflowEvent("lead.converted", {
+    subject_type: "leads",
+    subject_id: id,
+    deal_id: data,
+  });
   return (data as string) ?? null;
 }
 

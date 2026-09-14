@@ -1,4 +1,4 @@
-import type { Conversation, EmailTemplate, ThreadMessage } from "@/lib/types";
+﻿import type { Conversation, EmailTemplate, ThreadMessage } from "@/lib/types";
 import { iso } from "@/lib/date-utils";
 
 export const inboxChannels = ["Email", "WhatsApp", "SMS", "Call"] as const;
@@ -190,7 +190,7 @@ export const threadByConversation: Record<string, ThreadMessage[]> = {
       conversationId: "cv_001",
       direction: "out",
       authorName: "Hussain Ali",
-      authorEmail: "hussain.ali@relvo.io",
+      authorEmail: "hussain.ali@finlonexa.com",
       content:
         "Hi Ahmed, great to hear. I'll share the implementation timeline with a suggested phased rollout (Phase 1: core + approvals, Phase 2: migrations). Expect it by Thursday morning.",
       channel: "Email",

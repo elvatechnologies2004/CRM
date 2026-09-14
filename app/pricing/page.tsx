@@ -56,20 +56,20 @@ export default async function PricingPage() {
                   <p className="mt-4 text-3xl font-bold tracking-tight text-ink">
                     {plan.monthlyPriceCents > 0 ? (
                       <>
-                        ${(plan.monthlyPriceCents / 100).toFixed(0)}
+                        Rs {(plan.monthlyPriceCents / 100).toFixed(0)}
                         <span className="text-sm font-normal text-muted-foreground">/mo</span>
                       </>
                     ) : plan.code === "business" ? (
                       "Custom"
                     ) : (
-                      "$0"
+                      "Rs 0"
                     )}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {plan.code === "business"
                       ? "Talk to our team"
                       : plan.monthlyPriceCents > 0
-                        ? `$${(plan.yearlyPriceCents / 100).toFixed(0)}/yr when billed yearly`
+                        ? `Rs ${(plan.yearlyPriceCents / 100).toFixed(0)}/yr when billed yearly`
                         : "Free forever"}
                   </p>
                   <ul className="mt-6 flex-1 space-y-2.5">

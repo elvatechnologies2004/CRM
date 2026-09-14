@@ -23,13 +23,13 @@ interface AuthShellProps {
  */
 export function AuthShell({ title, description, children, footer, className }: AuthShellProps) {
   return (
-    <div className="flex min-h-svh w-full items-center justify-center bg-background px-4 py-10">
+    <div className="flex min-h-svh w-full items-center justify-center px-4 py-10">
       <div className={cn("w-full max-w-md", className)}>
         <div className="mb-8 flex items-center justify-center gap-2.5">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">
-            R
+            F
           </div>
-          <div className="text-xl font-semibold tracking-tight text-ink">Relvo CRM</div>
+          <div className="text-xl font-semibold tracking-tight text-ink">FinloNexa CRM</div>
         </div>
 
         <Card className="rounded-2xl border-border shadow-sm">

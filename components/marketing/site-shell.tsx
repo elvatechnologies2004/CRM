@@ -14,10 +14,10 @@ const NAV_LINKS = [
 
 export function MarketingHeader() {
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/90 backdrop-blur">
+    <header className="glass sticky top-0 z-50 w-full">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2 text-lg font-semibold tracking-tight text-ink">
-          Relvo<span className="text-primary"> CRM</span>
+          FinloNexa<span className="text-primary"> CRM</span>
         </Link>
         <nav className="hidden items-center gap-6 md:flex" aria-label="Main">
           {NAV_LINKS.map((link) => (
@@ -49,11 +49,11 @@ export function MarketingHeader() {
 export function MarketingFooter() {
   const year = new Date().getFullYear();
   return (
-    <footer className="border-t border-border bg-card py-12">
+    <footer className="glass-strong mt-24 border-t-0 py-12">
       <div className="mx-auto grid max-w-6xl grid-cols-2 gap-8 px-4 sm:grid-cols-4 sm:px-6">
         <div className="col-span-2 sm:col-span-1">
           <p className="text-lg font-semibold tracking-tight text-ink">
-            Relvo<span className="text-primary"> CRM</span>
+            FinloNexa<span className="text-primary"> CRM</span>
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
             The CRM that knows what needs to happen next.
@@ -89,7 +89,7 @@ export function MarketingFooter() {
         </div>
       </div>
       <div className="mx-auto mt-10 max-w-6xl border-t border-border px-4 pt-6 text-xs text-muted-foreground sm:px-6">
-        © {year} Relvo. All rights reserved.
+        © {year} FinloNexa. All rights reserved.
       </div>
     </footer>
   );

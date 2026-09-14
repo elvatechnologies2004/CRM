@@ -6,10 +6,10 @@ export default function AboutPage() {
       <MarketingHeader />
       <main>
         <section className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
-          <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">About Relvo</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">About FinloNexa</h1>
           <div className="mt-6 space-y-4 text-muted-foreground">
             <p>
-              Relvo is an AI-first CRM for modern sales teams. We started with a simple belief:
+              FinloNexa is an AI-first CRM for modern sales teams. We started with a simple belief:
               salespeople shouldn&apos;t spend their day feeding a database. The system should know
               what needs to happen next — and make it trivial to act.
             </p>

@@ -66,8 +66,8 @@ export async function sendTransactionalEmail(params: {
 
   const result = await emailProvider.send({
     from: {
-      email: params.fromEmail ?? "no-reply@relvo.app",
-      name: params.fromName ?? "Relvo CRM",
+      email: params.fromEmail ?? "no-reply@finlonexa.com",
+      name: params.fromName ?? "FinloNexa CRM",
     },
     to: recipients.map((email) => ({ email })),
     subject: rendered.subject,

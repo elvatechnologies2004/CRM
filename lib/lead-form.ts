@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   LeadRecord,
   LeadSourceOption,
   LeadStatus,
@@ -79,7 +79,7 @@ export function buildLeadRecord(data: LeadFormData, options: BuildLeadOptions): 
     ownerId: owner?.id ?? "u_1",
     ownerName: owner?.name ?? data.ownerName,
     expectedValue: Number(data.expectedValue) || 0,
-    currency: "USD",
+    currency: "PKR",
     budget: "Unclear",
     interest: data.interest.trim(),
     tags: parseTags(data.tags),

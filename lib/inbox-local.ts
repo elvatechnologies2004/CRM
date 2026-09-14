@@ -1,8 +1,8 @@
 import { uid } from "@/lib/activity-local";
 import type { Conversation, ThreadMessage } from "@/lib/types";
 
-const CONVERSATIONS_KEY = "relvo.inbox.conversations";
-const THREAD_KEY = "relvo.inbox.thread";
+const CONVERSATIONS_KEY = "finlonexa.inbox.conversations";
+const THREAD_KEY = "finlonexa.inbox.thread";
 
 export function readStoredConversations(): Conversation[] {
   if (typeof window === "undefined") return [];

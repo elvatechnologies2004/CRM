@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 
@@ -138,7 +138,7 @@ function InboxPageClient({ initialConversations, initialChannel }: InboxPageClie
       conversationId: activeId,
       direction: "out",
       authorName: "Hussain Ali",
-      authorEmail: "hussain.ali@relvo.io",
+      authorEmail: "hussain.ali@finlonexa.com",
       content,
       channel: activeConversation?.channel ?? "Email",
       sentAt: new Date().toISOString(),

@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://relvo.app";
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://finlonexa.com";
 const NOW = new Date();
 
 /** Marketing roots are public; app routes are excluded from crawling. */

@@ -112,9 +112,9 @@ export default function MarketingHome() {
             </h2>
             <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
               {[
-                { name: "Free", price: "$0", desc: "For individuals" },
-                { name: "Starter", price: "$29/mo", desc: "For small teams" },
-                { name: "Pro", price: "$69/mo", desc: "For growing companies" },
+                { name: "Free", price: "Rs 0", desc: "For individuals" },
+                { name: "Starter", price: "Rs 4,999/mo", desc: "For small teams" },
+                { name: "Pro", price: "Rs 9,999/mo", desc: "For growing companies" },
               ].map((plan) => (
                 <div key={plan.name} className="rounded-xl border border-border bg-card p-6">
                   <h3 className="font-semibold text-ink">{plan.name}</h3>
@@ -157,7 +157,7 @@ export default function MarketingHome() {
               Ready to close more deals?
             </h2>
             <p className="mx-auto mt-2 max-w-xl text-muted-foreground">
-              Join thousands of teams running their sales on Relvo. Start free, upgrade when you grow.
+              Join thousands of teams running their sales on FinloNexa CRM. Start free, upgrade when you grow.
             </p>
             <Button asChild size="lg" className="mt-6">
               <Link href="/signup">

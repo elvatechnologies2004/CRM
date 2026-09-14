@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Quote workflow server actions.
  * Handles quote creation, line items, status changes, and acceptance.
  * Server-only.
@@ -91,7 +91,7 @@ export async function createQuote(params: CreateQuoteParams) {
       status: "Draft",
       issue_date: params.issue_date || new Date().toISOString().split("T")[0],
       expiry_date: params.expiry_date || null,
-      currency: params.currency || "USD",
+      currency: params.currency || "PKR",
       subtotal,
       discount_total: params.discount_total || 0,
       tax_total: taxTotal + (params.tax_total || 0),

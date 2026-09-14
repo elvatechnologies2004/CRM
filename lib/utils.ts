@@ -5,9 +5,9 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const currencyFormatter = new Intl.NumberFormat("en-US", {
+const currencyFormatter = new Intl.NumberFormat("en-PK", {
   style: "currency",
-  currency: "USD",
+  currency: "PKR",
   maximumFractionDigits: 0,
 });
 
@@ -16,9 +16,9 @@ export function formatCurrency(value: number) {
 }
 
 export function formatCompactCurrency(value: number) {
-  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `$${(value / 1_000).toFixed(value % 1000 === 0 ? 0 : 1)}K`;
-  return `$${value.toLocaleString("en-US")}`;
+  if (value >= 1_000_000) return `Rs ${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `Rs ${(value / 1_000).toFixed(value % 1000 === 0 ? 0 : 1)}K`;
+  return `Rs ${value.toLocaleString("en-PK")}`;
 }
 
 export function formatDate(date: Date) {

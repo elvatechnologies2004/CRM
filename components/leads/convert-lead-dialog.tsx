@@ -57,7 +57,7 @@ function ConvertLeadDialog({
     pipeline: "Sales Pipeline",
     stage: "Qualified",
     value: "",
-    currency: "USD",
+    currency: "PKR",
     close: "This Quarter",
     owner: "",
     products: "",
@@ -75,7 +75,7 @@ function ConvertLeadDialog({
         pipeline: "Sales Pipeline",
         stage: lead.status === "Proposal" ? "Proposal" : "Qualified",
         value: String(lead.expectedValue || ""),
-        currency: lead.currency || "USD",
+        currency: lead.currency || "PKR",
         close: "This Quarter",
         owner: lead.ownerName,
         products: lead.interest,
@@ -186,10 +186,10 @@ function ConvertLeadDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="PKR">PKR (₨)</SelectItem>
                 <SelectItem value="USD">USD ($)</SelectItem>
                 <SelectItem value="GBP">GBP (£)</SelectItem>
                 <SelectItem value="AED">AED (د.إ)</SelectItem>
-                <SelectItem value="PKR">PKR (₨)</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -1,4 +1,4 @@
-# Launch Checklist — Relvo CRM
+# Launch Checklist — FinloNexa CRM
 
 > Phase 7 deliverable. Run this before any production GA.
 
