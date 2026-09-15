@@ -34,6 +34,9 @@ const MARKETING_PATH_PREFIXES = [
   "/updates",
 ];
 
+// Platform Administration has its own dedicated shell (AdminShell).
+const PLATFORM_ADMIN_PREFIX = "/admin";
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = React.useState(false);
@@ -87,7 +90,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
     );
 
-  if (isAuthRoute || isMarketingRoute) {
+  const isPlatformAdminRoute =
+    pathname === PLATFORM_ADMIN_PREFIX ||
+    pathname.startsWith(`${PLATFORM_ADMIN_PREFIX}/`);
+
+  if (isAuthRoute || isMarketingRoute || isPlatformAdminRoute) {
     return <>{children}</>;
   }
 

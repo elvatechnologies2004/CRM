@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 
-import { RoutingClient } from "@/components/admin/routing-client";
+import { RoutingClient } from "@/components/enterprise/routing-client";
 import { can } from "@/lib/crm/context";
 import { getRoutingRules } from "@/lib/routing/routing";
 

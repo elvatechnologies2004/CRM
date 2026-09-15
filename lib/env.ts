@@ -24,7 +24,11 @@ export const supabaseEnv = {
   },
   /** Secret key (sb_secret_…) or legacy service-role key — server-only. Never prefix with NEXT_PUBLIC_. */
   get serviceRoleKey(): string {
-    return process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+    return (
+      process.env.SUPABASE_SECRET_KEY ||
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      ""
+    );
   },
   /** Alias matching Supabase's 2026 key naming. */
   get secretKey(): string {

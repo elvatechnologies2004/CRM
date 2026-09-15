@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 
-import { TerritoriesClient } from "@/components/admin/territories-client";
+import { TerritoriesClient } from "@/components/enterprise/territories-client";
 import { can } from "@/lib/crm/context";
 import { getTerritories } from "@/lib/territories/territories";
 

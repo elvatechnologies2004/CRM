@@ -89,10 +89,10 @@ export const sidebarNav: SidebarNavSection[] = [
   {
     title: "Enterprise",
     items: [
-      { label: "Hierarchy", href: "/admin/hierarchy", icon: Network },
-      { label: "Territories", href: "/admin/territories", icon: Globe },
-      { label: "Lead Routing", href: "/admin/routing", icon: Shuffle },
-      { label: "Workflows", href: "/admin/workflows", icon: Workflow },
+      { label: "Hierarchy", href: "/enterprise/hierarchy", icon: Network },
+      { label: "Territories", href: "/enterprise/territories", icon: Globe },
+      { label: "Lead Routing", href: "/enterprise/routing", icon: Shuffle },
+      { label: "Workflows", href: "/enterprise/workflows", icon: Workflow },
       { label: "Approvals", href: "/approvals", icon: BadgeCheck },
     ],
   },

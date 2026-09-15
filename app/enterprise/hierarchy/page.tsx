@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 
-import { HierarchyClient } from "@/components/admin/hierarchy-client";
+import { HierarchyClient } from "@/components/enterprise/hierarchy-client";
 import { can } from "@/lib/crm/context";
 import { getOrgHierarchy } from "@/lib/org/hierarchy";
 

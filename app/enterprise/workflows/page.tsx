@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 
-import { WorkflowsClient } from "@/components/admin/workflows-client";
+import { WorkflowsClient } from "@/components/enterprise/workflows-client";
 import { can } from "@/lib/crm/context";
 import { getWorkflowRuns, getWorkflows } from "@/lib/workflows/engine";
 
