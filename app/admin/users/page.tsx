@@ -73,24 +73,25 @@ export default async function AdminUsersPage({
       header: "Organization",
       className: "min-w-[160px]",
       cell: (row) => (
-        <div>
-          <span className="text-ink">{row.organizationName ?? "—"}</span>
-          <p className="text-xs text-muted-foreground">{row.organizationRoleName ?? ""}</p>
-        </div>
+        <span className="text-ink">{row.organizationName ?? "—"}</span>
       ),
+    },
+    {
+      header: "Role",
+      className: "min-w-[140px]",
+      cell: (row) => {
+        if (row.isPlatformAdmin) {
+          return <Badge variant="purple">Platform Admin</Badge>;
+        }
+        if (row.organizationRoleName && row.organizationRoleName !== "—") {
+          return <Badge variant="outline">{row.organizationRoleName}</Badge>;
+        }
+        return <span className="text-xs text-muted-foreground">User</span>;
+      },
     },
     {
       header: "Status",
       cell: (row) => <StatusBadge value={row.status} />,
-    },
-    {
-      header: "Platform",
-      cell: (row) =>
-        row.isPlatformAdmin ? (
-          <Badge variant="purple">Platform Admin</Badge>
-        ) : (
-          <span className="text-xs text-muted-foreground">—</span>
-        ),
     },
     {
       header: "Orgs",
