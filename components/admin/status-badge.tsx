@@ -13,6 +13,7 @@ const VALUE_VARIANTS: Record<string, BadgeProps["variant"]> = {
   won: "success",
 
   pending: "warning",
+  restricted: "warning",
   approaching: "warning",
   warning: "warning",
   partial: "warning",

@@ -9,6 +9,7 @@ import {
   Plug,
   ScrollText,
   Settings,
+  ShieldCheck,
   Sparkles,
   TrendingUp,
   Users,
@@ -37,6 +38,7 @@ export const adminNavItems: AdminNavItem[] = [
   { label: "System Health", href: "/admin/system", icon: Activity },
   { label: "Audit Logs", href: "/admin/audit", icon: ScrollText },
   { label: "Feature Flags", href: "/admin/feature-flags", icon: Flag },
+  { label: "Org Controls", href: "/admin/controls", icon: ShieldCheck },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
