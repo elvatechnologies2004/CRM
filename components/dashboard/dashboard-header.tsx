@@ -4,9 +4,11 @@ import * as React from "react";
 import { CalendarDays } from "lucide-react";
 
 import { DateRangeSelector } from "@/components/dashboard/date-range-selector";
+import { useCurrentUser } from "@/lib/current-user";
 import { formatDate } from "@/lib/utils";
 
 function DashboardHeader() {
+  const user = useCurrentUser();
   const [today, setToday] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -18,7 +20,7 @@ function DashboardHeader() {
     <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-[26px]">
-          Good Morning, Hussain!{" "}
+          {user ? `Good Morning, ${user.name}!` : "Good Morning!"}{" "}
           <span role="img" aria-label="wave">
             👋
           </span>
