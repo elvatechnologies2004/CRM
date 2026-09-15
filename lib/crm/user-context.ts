@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
 
@@ -33,8 +34,10 @@ export interface CurrentUserContext {
 
 const EMPTY: CurrentUserContext | null = null;
 
-export async function createUserServerContext(): Promise<CurrentUserContext | null> {
-  if (!isSupabaseConfigured()) return EMPTY;
+/** Memoized per request: the shell layout + pages share ONE context resolution. */
+export const createUserServerContext = cache(
+  async (): Promise<CurrentUserContext | null> => {
+    if (!isSupabaseConfigured()) return EMPTY;
 
   const supabase = await createSupabaseServerClient();
 
@@ -124,4 +127,5 @@ export async function createUserServerContext(): Promise<CurrentUserContext | nu
     membership,
     permissions,
   };
-}
+  },
+);

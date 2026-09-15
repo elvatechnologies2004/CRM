@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
@@ -61,11 +62,11 @@ export async function fetchOwnerIndex(
   return index;
 }
 
-/** Returns the active org id for the current user, or null. */
-export async function getActiveOrgId(supabase: DbClient): Promise<string | null> {
+/** Returns the active org id for the current user, or null. Memoized per request. */
+export const getActiveOrgId = cache(async (supabase: DbClient): Promise<string | null> => {
   const { data } = await supabase.rpc("current_organization_id");
   return (data as string | null) ?? null;
-}
+});
 
 export function getOrgIdOrThrow(organizationId: string | null): string {
   if (!organizationId) {

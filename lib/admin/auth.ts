@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -37,8 +38,12 @@ interface PlatformAdminRow {
  * Reads the membership row through the USER-scoped client so RLS applies:
  * the `platform_admins_select` policy only returns rows to platform admins,
  * so a regular CRM user simply never sees the row.
+ *
+ * Memoized per request (`cache`) — the layout guard and each page's
+ * `requirePlatformPermission` share ONE resolution instead of re-hitting
+ * Supabase up to four times per render.
  */
-export async function getPlatformAdminContext(): Promise<PlatformAdminContext | null> {
+export const getPlatformAdminContext = cache(async (): Promise<PlatformAdminContext | null> => {
   if (!supabaseEnv.isConfigured) return null;
 
   try {
@@ -86,7 +91,7 @@ export async function getPlatformAdminContext(): Promise<PlatformAdminContext | 
   } catch {
     return null;
   }
-}
+});
 
 async function isAuthenticated(): Promise<boolean> {
   if (!supabaseEnv.isConfigured) return false;

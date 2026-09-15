@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
@@ -10,9 +11,11 @@ import { supabaseEnv } from "@/lib/env";
  * Use in Server Components, Server Actions and Route Handlers.
  *
  * IMPORTANT: `cookies()` is async in Next.js 16 — always `await`.
- * Do not construct inside render loops; one per request is enough.
+ * The result is memoized per request with React `cache()` so the many
+ * places that create a server client share ONE instance, avoiding
+ * repeated session reads across a single render.
  */
-export async function createSupabaseServerClient() {
+export const createSupabaseServerClient = cache(async () => {
   const cookieStore = await cookies();
   return createServerClient(supabaseEnv.url, supabaseEnv.anonKey, {
     cookies: {
@@ -31,4 +34,4 @@ export async function createSupabaseServerClient() {
       },
     },
   });
-}
+});
