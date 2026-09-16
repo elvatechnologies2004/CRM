@@ -1,0 +1,24 @@
+{
+  "name": "whatsapp-connector",
+  "version": "1.0.0",
+  "description": "FinloNexa WhatsApp Web connector service - always-on Node.js service for QR-based WhatsApp connection",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "build": "echo 'No build step - Node.js source only'"
+  },
+  "dependencies": {
+    "whatsapp-web.js": "^1.24.0",
+    "qrcode": "^1.5.3",
+    "express": "^4.18.2",
+    "@supabase/supabase-js": "^2.39.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

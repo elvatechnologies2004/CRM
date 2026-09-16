@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -46,3 +47,25 @@ next-env.d.ts
 FINAL_BUILD.txt
 server.log
 *.log
+
+# WhatsApp connector runtime data (live auth sessions - SECRET, never commit)
+.tmp/
+/tmp*/
+
+# scratch test artifacts
+/0
+/bgtest.err
+/bgtest6.err
+/whatsapp_qr_test.png
+/connector2.*.log
+
+# WhatsApp connector runtime (never commit)
+services/whatsapp-connector/node_modules/
+services/whatsapp-connector/.tmp/
+services/whatsapp-connector/src/sessions/
+services/whatsapp-connector/misc/bgtest*.mjs
+services/whatsapp-connector/misc/bgtest*.js
+services/whatsapp-connector/misc/test-*.mjs
+**/node_modules/
+**/.tmp/
+.tmp/

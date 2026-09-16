@@ -26,6 +26,7 @@ export interface User {
   role: string;
   email: string;
   avatarUrl?: string;
+  organizationId?: string;
 }
 
 export interface Company {

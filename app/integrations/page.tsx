@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 const INTEGRATIONS = [
   { name: "Gmail", desc: "Shared inbox and sequences", status: "Beta" as const },
   { name: "Outlook", desc: "Email sync and sequences", status: "Beta" as const },
-  { name: "WhatsApp", desc: "Two-way messaging", status: "Coming Soon" as const },
+  { name: "WhatsApp", desc: "Two-way messaging", status: "Available" as const },
   { name: "Google Calendar", desc: "Meeting scheduling", status: "Beta" as const },
   { name: "Microsoft Calendar", desc: "Outlook scheduling", status: "Coming Soon" as const },
   { name: "Slack", desc: "Alerts and approvals", status: "Coming Soon" as const },

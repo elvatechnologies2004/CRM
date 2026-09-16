@@ -24,7 +24,7 @@ export function useCurrentUser(): User | null {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("id, full_name, job_title, email")
+        .select("id, full_name, job_title, email, organization_id")
         .eq("id", auth.user.id)
         .maybeSingle();
 
@@ -38,6 +38,7 @@ export function useCurrentUser(): User | null {
         name,
         role: (profile?.job_title as string) || "Member",
         email: (profile?.email as string) || auth.user.email || "",
+        organizationId: (profile?.organization_id as string) || undefined,
       });
     }
 
