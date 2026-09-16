@@ -80,10 +80,7 @@ export const sidebarNav: SidebarNavSection[] = [
   {
     title: "Communication",
     items: [
-      { label: "Inbox", href: "/inbox", icon: Inbox },
-      { label: "Sequences", href: "/sequences", icon: Mail },
-      { label: "WhatsApp", href: "/inbox?channel=whatsapp", icon: MessageCircle },
-      { label: "SMS", href: "/inbox?channel=sms", icon: Smartphone },
+      { label: "WhatsApp", href: "/integrations/whatsapp", icon: MessageCircle },
     ],
   },
   {
