@@ -246,7 +246,7 @@ type SendMessageComposerProps = {
 function SendMessageComposer({ onSend }: SendMessageComposerProps) {
   const [recipient, setRecipient] = useState("");
   const [text, setText] = useState("");
-  const [sending, setSending] = useState(falseapsed);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSend = async () => {
