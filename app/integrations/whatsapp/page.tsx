@@ -37,6 +37,10 @@ type WhatsAppHookReturn = {
   connectWhatsApp: () => Promise<void>;
   disconnectWhatsApp: () => Promise<void>;
   refreshQr: () => Promise<void>;
+  sendWhatsAppMessage: (opts: {
+    recipient: string;
+    text: string;
+  }) => Promise<{ ok: boolean; error?: string }>;
 };
 
 function useWhatsAppConnection(): WhatsAppHookReturn {
@@ -132,6 +136,48 @@ function useWhatsAppConnection(): WhatsAppHookReturn {
     }
   };
 
+  const sendWhatsAppMessage = async ({
+    recipient,
+    text,
+  }: {
+    recipient: string;
+    text: string;
+  }) => {
+    setFetching(true);
+    try {
+      const res = await fetch(
+        `${WHATSAPP_CONNECTOR_API}/api/integrations/whatsapp/messages`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            credentials: "include",
+          },
+          body: JSON.stringify({
+            organizationId: orgId || undefined,
+            phone: recipient,
+            text,
+          }),
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        setToastMessage(data.error || "Failed to send message");
+        return { ok: false, error: data.error || "Failed to send message" };
+      }
+      setToastMessage("Message sent");
+      return {
+        ok: true,
+        externalMessageId: data.external_message_id,
+      };
+    } catch (err) {
+      setToastMessage("Failed to reach WhatsApp connector");
+      return { ok: false, error: "Failed to reach WhatsApp connector" };
+    } finally {
+      setFetching(false);
+    }
+  };
+
   const refreshQr = async () => {
     setLoadingQr(true);
     setFetching(true);
@@ -186,7 +232,79 @@ function useWhatsAppConnection(): WhatsAppHookReturn {
     connectWhatsApp,
     disconnectWhatsApp,
     refreshQr,
+    sendWhatsAppMessage,
   } as WhatsAppHookReturn;
+}
+
+type SendMessageComposerProps = {
+  onSend: (opts: {
+    recipient: string;
+    text: string;
+  }) => Promise<{ ok: boolean; error?: string }>;
+};
+
+function SendMessageComposer({ onSend }: SendMessageComposerProps) {
+  const [recipient, setRecipient] = useState("");
+  const [text, setText] = useState("");
+  const [sending, setSending] = useState(falseapsed);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSend = async () => {
+    const trimmedRecipient = recipient.trim();
+    const trimmedText = text.trim();
+    if (!trimmedRecipient || !trimmedText) {
+      setError("Enter both a recipient phone number and a message.");
+      return;
+    }
+    setSending(true);
+    setError(null);
+    try {
+      const result = await onSend({
+        recipient: trimmedRecipient,
+        text: trimmedText,
+      });
+      if (!result.ok) {
+        setError(result.error || "Failed to send message.");
+        return;
+      }
+      setRecipient("");
+      setText("");
+    } catch (err) {
+      setError("Failed to send message.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="mb-6 rounded-lg border border-border bg-muted/50 p-4">
+      <p className="font-medium mb-3">Send a Message</p>
+      <input
+        type="tel"
+        value={recipient}
+        onChange={(e) => setRecipient(e.target.value)}
+        placeholder="Recipient phone (E.164, e.g. +15551234567)"
+        className="w-full mb-3 rounded-md border border-input bg-background px-3 py-2 text-sm"
+      />
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Type your WhatsApp message…"
+        rows={3}
+        className="w-full mb-3 rounded-md border border-input bg-background px-3 py-2 text-sm"
+      />
+      {error && <p className="mb-3 text-sm text-destructive">{error}</p>}
+      <Button onClick={handleSend} disabled={sending}>
+        {sending ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin mr-2" /> Sending…
+          </>
+        ) : (
+          "Send"
+        )}
+      </Button>
+    </div>
+  );
 }
 
 export default function WhatsAppSettingsPage() {
@@ -199,6 +317,7 @@ export default function WhatsAppSettingsPage() {
     connectWhatsApp,
     disconnectWhatsApp,
     refreshQr,
+    sendWhatsAppMessage,
   } = useWhatsAppConnection() as WhatsAppHookReturn;
   const router = useRouter();
 
@@ -249,6 +368,8 @@ export default function WhatsAppSettingsPage() {
           <p className="text-sm text-muted-foreground">Last Synced</p>
           <p className="font-medium">Just now</p>
         </div>
+
+        <SendMessageComposer onSend={sendWhatsAppMessage} />
 
         <Dialog>
           <DialogTrigger asChild>
