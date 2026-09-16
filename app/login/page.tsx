@@ -8,21 +8,9 @@ import { LoginForm } from "@/components/auth/login-form";
 export const metadata = { title: "Sign in" };
 
 const FEATURES = [
-  {
-    icon: ListChecks,
-    title: "Organize Your Pipeline",
-    description: "Stage every deal visually so nothing slips through the cracks.",
-  },
-  {
-    icon: BarChart3,
-    title: "Track Performance",
-    description: "Follow revenue, conversion, and team activity in real time.",
-  },
-  {
-    icon: Zap,
-    title: "Automate Growth",
-    description: "Remove busywork with clean automation from lead to close.",
-  },
+  { icon: ListChecks, title: "Organize", subtitle: "Your Pipeline" },
+  { icon: BarChart3, title: "Track", subtitle: "Performance" },
+  { icon: Zap, title: "Automate", subtitle: "Growth" },
 ];
 
 export default async function LoginPage({
@@ -37,70 +25,72 @@ export default async function LoginPage({
   return (
     <AuthShell
       variant="split"
-      title="Welcome back"
-      description="Sign in to your FinloNexa workspace"
+      title="Welcome Back"
+      description="Sign in to your FinloNexa CRM account"
       asideAction={
-        <Link
-          href="/signup"
-          className="inline-flex items-center gap-1.5 rounded-full border border-white/55 bg-white/10 px-5 py-2.5 text-sm font-medium text-ink backdrop-blur-xl transition-colors hover:bg-white/20"
-        >
-          New here? Create Account
-        </Link>
+        <div className="flex items-center gap-3">
+          <span className="hidden text-sm font-medium text-white sm:inline">
+            New here?
+          </span>
+          <Link
+            href="/signup"
+            className="inline-flex items-center rounded-full border border-white/60 bg-white/10 px-[18px] py-2.5 text-sm font-medium text-white backdrop-blur-md transition-colors hover:bg-white/20"
+          >
+            Create Account
+          </Link>
+        </div>
       }
       branding={
         <div className="flex flex-col">
-          {/* Logo — top-left, outside the card */}
-          <div className="mb-12 flex items-center gap-2.5">
+          {/* Brand — FinloNexa / CRM, top-left, outside any card */}
+          <div className="mb-16 flex items-center gap-2.5">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">
               F
             </div>
-            <div className="text-xl font-semibold tracking-tight text-ink">FinloNexa CRM</div>
+            <div className="flex flex-col leading-tight">
+              <span className="text-lg font-bold tracking-tight text-[#0B183D]">
+                FinloNexa
+              </span>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#64748B]">
+                CRM
+              </span>
+            </div>
           </div>
 
-          {/* Headline — Midnight + Nexa Blue */}
-          <h1 className="max-w-2xl text-[clamp(3rem,5vw,4.5rem)] font-bold leading-[1.02] tracking-[-0.02em]">
-            <span className="block text-ink">Relationships</span>
-            <span className="block text-primary">Drive Revenue.</span>
+          {/* Headline — no box behind it. Localized gradient (in the shell) keeps it readable. */}
+          <h1 className="max-w-2xl text-[clamp(3.5rem,4.9vw,4rem)] font-bold leading-[1.02] tracking-[-0.02em]">
+            <span className="block text-[#0B183D]">Relationships</span>
+            <span className="block text-[#7C8CFF]">Drive Revenue.</span>
           </h1>
 
-          <p className="mt-6 max-w-md text-lg leading-relaxed text-muted-foreground">
+          <p className="mt-6 max-w-[520px] text-[17px] leading-[1.55] text-[#33415F]">
             A modern CRM to manage leads, close deals and grow your business — all in one place.
           </p>
 
-          {/* Feature list — translucent circles + soft glass */}
-          <ul className="mt-10 space-y-5">
-            {FEATURES.map(({ icon: Icon, title, description }) => (
-              <li key={title} className="flex items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/40 bg-white/15 text-primary backdrop-blur-xl">
-                  <Icon className="h-5 w-5" aria-hidden />
+          {/* Compact 3-column feature row — icons only, no long descriptions */}
+          <div className="mt-10 grid w-[min(540px,100%)] grid-cols-3 gap-x-8 gap-y-5">
+            {FEATURES.map(({ icon: Icon, title, subtitle }) => (
+              <div key={title} className="flex flex-col gap-2.5">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[rgba(124,140,255,0.22)] bg-[rgba(187,200,255,0.30)]">
+                  <Icon className="h-5 w-5 text-[#7C8CFF]" aria-hidden />
                 </div>
-                <div>
-                  <div className="font-semibold text-ink">{title}</div>
-                  <div className="mt-0.5 text-sm text-muted-foreground">{description}</div>
+                <div className="text-[15px] font-semibold leading-snug text-[#0B183D]">
+                  {title}
+                  <br />
+                  {subtitle}
                 </div>
-              </li>
+              </div>
             ))}
-          </ul>
-
-          {/* Bottom hairline + tagline */}
-          <div className="mt-12 border-t border-white/40 pt-6">
-            <p className="text-sm font-medium tracking-wide text-ink">
-              A Smarter CRM for a Brighter Tomorrow
-            </p>
           </div>
         </div>
       }
       footer={
-        <>
+        <p className="text-sm text-[#475569]">
           Don&apos;t have an account?{" "}
-          <Link href="/signup" className="font-medium text-primary hover:underline">
-            Create one
+          <Link href="/signup" className="font-semibold text-[#6577F3] hover:underline">
+            Create Account
           </Link>
-          {" · "}
-          <Link href="/forgot-password" className="font-medium text-primary hover:underline">
-            Forgot password?
-          </Link>
-        </>
+        </p>
       }
     >
       {hasError ? (
