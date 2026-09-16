@@ -279,10 +279,9 @@ app.post("/api/integrations/whatsapp/connect", async (req, res) => {
     // If there's an existing connection, clear it first
     await clearConnectionState(organizationId);
 
-    // Immediately invalidate any stale QR in memory + DB so the frontend
+    // Immediately invalidate any stale QR in memory so the frontend
     // never sees a leftover QR while a fresh one is being generated.
     qrCode = null;
-    clearQrState(organizationId);
 
     // Bump the generation token: QR/authenticated events fired by an older,
     // destroyed client must never overwrite the state produced by this one.
