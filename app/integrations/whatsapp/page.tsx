@@ -290,24 +290,25 @@ export default function WhatsAppSettingsPage() {
           Link your WhatsApp account to FinloNexa.
         </p>
 
-        <div className="mb-6">
+        <div className="mb-6 flex justify-center">
           <div
             className={cn(
               "relative",
-              "aspect-square",
               "rounded-lg",
               "border",
               "border-border",
               "bg-card",
-              status.qrDataUrl ? { backgroundImage: `url('${status.qrDataUrl}'` } : undefined
+              "overflow-hidden",
+              status.qrDataUrl ? { backgroundImage: `url('${status.qrDataUrl}')` } : undefined
             )}
+            style={{ width: 1000, height: 1000, maxWidth: "100%" }}
           >
             {status.qrDataUrl ? (
               <img
                 src={status.qrDataUrl}
                 alt="WhatsApp QR Code"
-                className="absolute inset-0 w-full h-full object-cover"
-                style={{ objectFit: "cover" }}
+                className="absolute inset-0 w-full h-full"
+                style={{ objectFit: "contain" }}
               />
             ) : (
               <div
