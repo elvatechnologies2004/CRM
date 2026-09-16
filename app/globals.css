@@ -1,39 +1,39 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #f4f7fd;
+  --foreground: #0b183d;
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #0b183d;
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #6366f1;
+  --popover-foreground: #0b183d;
+  --primary: #7c8cff;
   --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #eef2ff;
-  --accent-foreground: #4f46e5;
+  --secondary: #eef1ff;
+  --secondary-foreground: #0b183d;
+  --muted: #eef3fb;
+  --muted-foreground: #94a3bb;
+  --accent: #e4e9ff;
+  --accent-foreground: #0b183d;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   --success: #22c55e;
   --warning: #f59e0b;
-  --brand-blue: #4f7cff;
-  --brand-purple: #8b5cf6;
-  --brand-cyan: #22d3ee;
-  --ink: #0f172a;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #6366f1;
-  --blob-1: rgba(79, 124, 255, 0.16);
-  --blob-2: rgba(139, 92, 246, 0.13);
-  --blob-3: rgba(34, 211, 238, 0.12);
+  --brand-blue: #7c8cff;
+  --brand-purple: #bbc8ff;
+  --brand-cyan: #9fd7f4;
+  --ink: #0b183d;
+  --border: #d9e2f5;
+  --input: #d9e2f5;
+  --ring: #7c8cff;
+  --blob-1: rgba(124, 140, 255, 0.16);
+  --blob-2: rgba(187, 200, 255, 0.13);
+  --blob-3: rgba(159, 215, 244, 0.12);
   --glass-bg: rgba(255, 255, 255, 0.6);
   --glass-bg-strong: rgba(255, 255, 255, 0.75);
   --glass-highlight: rgba(255, 255, 255, 0.72);
-  --glass-shine: rgba(79, 124, 255, 0.06);
-  --glass-border: rgba(226, 232, 240, 0.7);
+  --glass-shine: rgba(124, 140, 255, 0.06);
+  --glass-border: rgba(148, 163, 184, 0.2);
 }
 
 .dark {
