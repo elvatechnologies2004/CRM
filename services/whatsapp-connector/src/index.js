@@ -63,6 +63,126 @@ let qrGeneration = 0;
 // Session directory for whatsapp-web.js
 const SESSION_DIR = "./.tmp/whatsapp-sessions";
 
+// ============================================================
+// Helper: Resolve the persisted connection row for an org
+// (id + the WhatsApp account phone number configured on connect).
+// ============================================================
+async function getConnectionRow(organizationId) {
+  const { data, error } = await supa
+    .from("whatsapp_web_connections")
+    .select("id, phone_number")
+    .eq("organization_id", organizationId)
+    .limit(1);
+  if (error) {
+    console.error("Error reading connection row:", error);
+    return null;
+  }
+  return data && data.length ? data[0] : null;
+}
+
+// ============================================================
+// Helper: Find an existing conversation by external chat id,
+// or create it on first contact.
+// ============================================================
+async function findOrCreateConversation(organizationId, connectionId, externalChatId, displayName) {
+  const { data: existing, error: exErr } = await supa
+    .from("whatsapp_conversations")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .eq("connection_id", connectionId)
+    .eq("external_chat_id", externalChatId)
+    .limit(1);
+  if (exErr) {
+    console.error("Error reading conversation:", exErr);
+    return null;
+  }
+  if (existing && existing.length) return existing[0].id;
+
+  const { data: ins, error: insErr } = await supa
+    .from("whatsapp_conversations")
+    .insert({
+      organization_id: organizationId,
+      connection_id: connectionId,
+      external_chat_id: externalChatId,
+      display_name: displayName || externalChatId,
+      phone_number: externalChatId,
+      last_message_at: new Date().toISOString(),
+    })
+    .select("id")
+    .limit(1);
+  if (insErr) {
+    console.error("Error creating conversation:", insErr);
+    return null;
+  }
+  return ins && ins.length ? ins[0].id : null;
+}
+
+// ============================================================
+// Helper: Persist a message, deduping on external_message_id.
+// ============================================================
+async function upsertMessage({
+  organizationId,
+  connectionId,
+  conversationId,
+  externalMessageId,
+  direction,
+  sender,
+  recipient,
+  messageType,
+  body,
+  mediaReference,
+  sentAt,
+  status,
+}) {
+  // Dedup: skip if this WhatsApp message id was already stored
+  const { data: existing, error: exErr } = await supa
+    .from("whatsapp_messages")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .eq("external_message_id", externalMessageId)
+    .limit(1);
+  if (exErr) {
+    console.error("Error dedup-checking message:", exErr);
+    return null;
+  }
+  if (existing && existing.length) return existing[0].id;
+
+  const { data: ins, error: insErr } = await supa
+    .from("whatsapp_messages")
+    .insert({
+      organization_id: organizationId,
+      connection_id: connectionId,
+      conversation_id: conversationId,
+      external_message_id: externalMessageId,
+      direction,
+      sender,
+      recipient,
+      message_type: messageType,
+      body,
+      media_reference: mediaReference || null,
+      sent_at: sentAt || new Date().toISOString(),
+      status: status || "sent",
+    })
+    .select("id")
+    .limit(1);
+  if (insErr) {
+    console.error("Error inserting message:", insErr);
+    return null;
+  }
+
+  // Touch the conversation so inbox ordering reflects latest activity
+  try {
+    await supa
+      .from("whatsapp_conversations")
+      .update({ last_message_at: sentAt || new Date().toISOString() })
+      .eq("id", conversationId);
+  } catch (err) {
+    console.error("Error touching conversation:", err);
+  }
+
+  return ins && ins.length ? ins[0].id : null;
+}
+
 // Ensure session directory exists (handled by the library)
 
 // ============================================================
@@ -387,6 +507,66 @@ app.post("/api/integrations/whatsapp/connect", async (req, res) => {
       }
     });
 
+    // Event: New message created (inbound or outbound echo)
+    whatsappClient.on("message_create", async (msg) => {
+      try {
+        // Ignore events from a stale superseded client — only the latest
+        // generation may write messages (see generation-token guard above).
+        if (generation !== qrGeneration) return;
+
+        // Resolve the persisted connection row (connection id + registered
+        // WhatsApp number) used for direction and conversation mapping.
+        const conn = await getConnectionRow(organizationId);
+        if (!conn) return;
+
+        // Determine the remote (peer) party and direction.
+        const isOutboundEcho = !!msg.fromMe;
+        const remoteJid = isOutboundEcho ? msg.to : msg.from;
+        if (!remoteJid) return;
+        const remotePhone = String(remoteJid).replace(/@[^@]*$/, "").trim();
+        const localPhone = String(conn.phone_number || "").replace(/@[^@]*$/, "").trim();
+
+        // Map whatsapp-web.js message type -> our message_type vocabulary.
+        const typeMap = {
+          chat: "text", text: "text", image: "image", document: "document",
+          audio: "audio", video: "video", ptt: "audio", sticker: "image",
+          template: "template",
+        };
+        const messageType = typeMap[msg.type] || "text";
+
+        // Body: plain text for chat/text; placeholder for media attachments.
+        const body = msg.type === "chat" || msg.type === "text"
+          ? (msg.body || "")
+          : `[${msg.type || "media"}]`;
+
+        const conversationId = await findOrCreateConversation(
+          organizationId,
+          conn.id,
+          remotePhone,
+          msg.chat?.name || msg.notifyName || remotePhone
+        );
+        if (!conversationId) return;
+
+        // Dedup by external message id -> persist (or skip if already stored)
+        await upsertMessage({
+          organizationId,
+          connectionId: conn.id,
+          conversationId,
+          externalMessageId: msg.id._serialized || msg.id.id || `wa_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+          direction: isOutboundEcho ? "outbound" : "inbound",
+          sender: isOutboundEcho ? localPhone : remotePhone,
+          recipient: isOutboundEcho ? remotePhone : localPhone,
+          messageType,
+          body,
+          mediaReference: msg.hasMedia ? `wa-media:${msg.id._serialized}` : null,
+          sentAt: new Date((msg.timestamp || Date.now() / 1000) * 1000).toISOString(),
+          status: isOutboundEcho ? "sent" : "delivered",
+        });
+      } catch (err) {
+        console.error("Error syncing inbound message:", err);
+      }
+    });
+
     // Event: Client is ready (connection established)
     whatsappClient.on("ready", async () => {
       try {
@@ -567,6 +747,70 @@ app.post("/api/integrations/whatsapp/disconnect", async (req, res) => {
 // ============================================================
 // Start the server
 // ============================================================
+
+// Outbound message route — send a WhatsApp text/media message on behalf
+// of an organization via its active connection, then mirror the message
+// back to the CRM store (dedup-safe on external_message_id).
+app.post("/api/integrations/whatsapp/messages", async (req, res) => {
+  try {
+    const organizationId = await resolveOrganizationId(req.body.organizationId || req.query.organizationId);
+    if (!organizationId) return res.status(400).json({ error: "organizationId is required" });
+
+    const conn = await getConnectionRow(organizationId);
+    if (!conn || !whatsappClient) {
+      return res.status(409).json({ error: "WhatsApp is not connected. Start /connect first." });
+    }
+
+    const { phone, text, mediaUrl, messageType } = req.body || {};
+    if (!phone) return res.status(400).json({ error: "phone is required (E.164)" });
+
+    const targetPhone = String(phone).replace(/[^+\d]/g, "");
+    const jid = `${targetPhone}@c.us`;
+
+    const sent = await whatsappClient.sendMessage(jid, text || "");
+    if (!sent) throw new Error("sendMessage returned no receipt");
+
+    const externalMessageId =
+      sent.id?._serialized ||
+      sent.id?.id ||
+      `wa_out_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const recipientPhone = getLocalPhone(conn);
+
+    const conversationId = await findOrCreateConversation(
+      organizationId,
+      conn.id,
+      targetPhone,
+      targetPhone,
+      targetPhone
+    );
+    if (conversationId) {
+      await upsertMessage({
+        organizationId,
+        connectionId: conn.id,
+        conversationId,
+        externalMessageId,
+        direction: "outbound",
+        sender: recipientPhone,
+        recipient: targetPhone,
+        messageType: messageType || "text",
+        body: text || "",
+        mediaReference: mediaUrl || "",
+        sentAt: new Date().toISOString(),
+        status: "sent",
+      });
+    }
+
+    res.json({
+      status: "sent",
+      external_message_id: externalMessageId,
+      to: targetPhone,
+      message: "Message sent successfully",
+    });
+  } catch (err) {
+    console.error("Error sending WhatsApp message:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 const PORT = process.env.PORT || 3001;
 
