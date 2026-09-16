@@ -301,15 +301,24 @@ export default function WhatsAppSettingsPage() {
               "overflow-hidden",
               status.qrDataUrl ? { backgroundImage: `url('${status.qrDataUrl}')` } : undefined
             )}
-            style={{ width: 1000, height: 1000, maxWidth: "100%" }}
+                style={{ width: 300, height: 300, maxWidth: "100%" }}
           >
             {status.qrDataUrl ? (
-              <img
-                src={status.qrDataUrl}
-                alt="WhatsApp QR Code"
-                className="absolute inset-0 w-full h-full"
-                style={{ objectFit: "contain" }}
-              />
+              <div className={cn("relative", status.qrDataUrl ? { backgroundImage: `url('${status.qrDataUrl}')` } : undefined)}
+            style={{ width: 300, height: 300, maxWidth: "100%" }}
+              >
+                <img
+                  src={status.qrDataUrl}
+                  alt="WhatsApp QR Code"
+                  className="absolute inset-0 w-full h-full"
+                  style={{ objectFit: "contain" }}
+                />
+                {loadingQr && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-card/80 backdrop-blur-sm">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                )}
+              </div>
             ) : (
               <div
                 className="flex h-64 w-64 items-center justify-center rounded-lg border-dashed border-border border-opacity-50 flex-col text-muted-foreground"
