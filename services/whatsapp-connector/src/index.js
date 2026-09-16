@@ -56,6 +56,9 @@ const supa = createClient(supabaseUrl, supabaseKey, {
 let whatsappClient = null;
 let qrCode = null;
 let qrTimeout = null;
+// Monotonic generation counter so a stale (previous) client's QR event can
+// never overwrite the QR produced by the most recent connect request.
+let qrGeneration = 0;
 
 // Session directory for whatsapp-web.js
 const SESSION_DIR = "./.tmp/whatsapp-sessions";
@@ -276,6 +279,15 @@ app.post("/api/integrations/whatsapp/connect", async (req, res) => {
     // If there's an existing connection, clear it first
     await clearConnectionState(organizationId);
 
+    // Immediately invalidate any stale QR in memory + DB so the frontend
+    // never sees a leftover QR while a fresh one is being generated.
+    qrCode = null;
+    clearQrState(organizationId);
+
+    // Bump the generation token: QR/authenticated events fired by an older,
+    // destroyed client must never overwrite the state produced by this one.
+    const generation = ++qrGeneration;
+
     // Generate a unique session ID
     const sessionId = getSessionId(organizationId);
 
@@ -319,6 +331,9 @@ app.post("/api/integrations/whatsapp/connect", async (req, res) => {
     // Event: QR code generated
     whatsappClient.on("qr", async (qr) => {
       try {
+        // Ignore QR events produced by a destroyed/stale client from an
+        // older connect request — only the latest generation may publish.
+        if (generation !== qrGeneration) return;
         // Generate QR code image from the base64 string
         const qrImage = await qrcode.toDataURL(qr, { scale: 8 });
         qrCode = {
@@ -345,6 +360,9 @@ app.post("/api/integrations/whatsapp/connect", async (req, res) => {
     // Event: Authentication successful (user scanned QR)
     whatsappClient.on("authenticated", async () => {
       try {
+        // Ignore events from a stale (previous) client of an older generation.
+        if (generation !== qrGeneration) return;
+
         console.log(`WhatsApp authenticated for organization ${organizationId}`);
 
         const user = whatsappClient.info?.user || {};
@@ -373,6 +391,10 @@ app.post("/api/integrations/whatsapp/connect", async (req, res) => {
     // Event: Client is ready (connection established)
     whatsappClient.on("ready", async () => {
       try {
+        // Ignore a stale client that was superseded by a newer generation —
+        // its "ready" must never mark the fresh session as connected.
+        if (generation !== qrGeneration) return;
+
         console.log(`WhatsApp client ready for organization ${organizationId}`);
 
         // Update status to connected
