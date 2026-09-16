@@ -593,8 +593,17 @@ app.post("/api/integrations/whatsapp/connect", async (req, res) => {
     whatsappClient.on("logout", async () => {
       console.log(`WhatsApp logged out from phone for organization ${organizationId}`);
 
-      // Wipe the persisted session so the next connect forces a fresh QR
-      clearLocalAuthSession(sessionId);
+      // Wipe the persisted session so the next connect forces a fresh QR.
+      // Defer it: whatsapp-web.js's own LocalAuth.logout() is unlinking these
+      // same files in THIS tick — wiping synchronously here races the library
+      // on Windows and aborts the process with EBUSY (resource busy/locked).
+      setTimeout(() => {
+        try {
+          clearLocalAuthSession(sessionId);
+        } catch (err) {
+          console.error("Error wiping session folder after logout:", err);
+        }
+      }, 2000);
 
       // Clear QR display
       qrCode = null;
