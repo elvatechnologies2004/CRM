@@ -15,7 +15,7 @@ import { ConvertLeadDialog } from "@/components/leads/convert-lead-dialog";
 import { AddTaskDialog, type NewTaskData } from "@/components/leads/add-task-dialog";
 import { ImportLeadDialog } from "@/components/leads/import-lead-dialog";
 import { fullName } from "@/components/leads/lead-row";
-import { buildLeadRecord, type LeadFormData } from "@/lib/lead-form";
+import { createLeadAction, updateLeadAction } from "@/app/leads/actions";
 import {
   markLeadDeleted,
   readConvertedDeals,
@@ -195,15 +195,46 @@ function LeadsPageClient({ leads: initialLeads, owners }: LeadsPageClientProps) 
 
   const clearFilters = () => setFilters({ ...defaultLeadFilters });
 
-  const handleAddSubmit = (data: LeadFormData) => {
-    setLeads((prev) => {
-      if (editingLead) {
-        const updated = buildLeadRecord(data, { owners, existing: editingLead });
-        return prev.map((lead) => (lead.id === editingLead.id ? updated : lead));
+  const handleAddSubmit = async (data: LeadFormData) => {
+    const owner = owners.find((candidate) => candidate.name === data.ownerName);
+    const input = {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+      phone: data.phone,
+      whatsapp: data.whatsapp,
+      companyName: data.companyName,
+      jobTitle: data.jobTitle,
+      country: data.country,
+      city: data.city,
+      source: data.source,
+      status: data.status,
+      expectedValue: data.expectedValue,
+      interest: data.interest,
+      tags: data.tags,
+      notes: data.notes,
+      ownerId: owner?.id,
+    };
+
+    if (editingLead) {
+      const result = await updateLeadAction({ id: editingLead.id, ...input });
+      if (result.error || !result.lead) {
+        setToast(result.error || "Failed to update lead");
+        window.setTimeout(() => setToast(null), 2400);
+        return;
       }
-      const created = buildLeadRecord(data, { owners });
-      return [created, ...prev];
-    });
+      setLeads((prev) =>
+        prev.map((lead) => (lead.id === editingLead.id ? result.lead! : lead))
+      );
+    } else {
+      const result = await createLeadAction(input);
+      if (result.error || !result.lead) {
+        setToast(result.error || "Failed to create lead");
+        window.setTimeout(() => setToast(null), 2400);
+        return;
+      }
+      setLeads((prev) => [result.lead!, ...prev]);
+    }
     setEditingLead(null);
     setAddOpen(false);
   };
