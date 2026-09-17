@@ -11,7 +11,7 @@ import { ContactsFilters, defaultContactsFilters, type ContactsFilterState, type
 import { ContactsHeader } from "@/components/contacts/contacts-header";
 import { ContactsStats } from "@/components/contacts/contacts-stats";
 import { ContactsTable, contactFullName } from "@/components/contacts/contacts-table";
-import { buildContactRecord, type ContactFormData } from "@/lib/contact-form";
+import type { ContactFormData } from "@/lib/contact-form";
 import { createContactAction, updateContactAction } from "@/app/contacts/actions";
 import {
   markContactArchived,
@@ -184,17 +184,45 @@ function ContactsPageClient({
 
   const clearFilters = () => setFilters({ ...defaultContactsFilters });
 
-  const handleAddSubmit = (data: ContactFormData) => {
-    setContacts((prev) => {
-      if (editingContact) {
-        const updated = buildContactRecord(data, { existing: editingContact });
-        upsertContact(updated);
-        return prev.map((contact) => (contact.id === editingContact.id ? updated : contact));
+  const handleAddSubmit = async (data: ContactFormData) => {
+    const owner = owners.find((candidate) => candidate.name === data.ownerName);
+    const input = {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      jobTitle: data.jobTitle,
+      email: data.email,
+      phone: data.phone,
+      whatsapp: data.whatsapp,
+      companyId: data.companyId || undefined,
+      lifecycleStage: data.lifecycleStage,
+      ownerId: owner?.id,
+      source: data.source,
+      country: data.country,
+      city: data.city,
+      address: data.address,
+      preferredChannel: data.preferredChannel,
+      tags: data.tags,
+    };
+
+    if (editingContact) {
+      const result = await updateContactAction({ id: editingContact.id, ...input });
+      if (result.error || !result.contact) {
+        setToast(result.error || "Failed to update contact");
+        window.setTimeout(() => setToast(null), 2400);
+        return;
       }
-      const created = buildContactRecord(data);
-      upsertContact(created);
-      return [created, ...prev];
-    });
+      setContacts((prev) =>
+        prev.map((contact) => (contact.id === editingContact.id ? result.contact! : contact))
+      );
+    } else {
+      const result = await createContactAction(input);
+      if (result.error || !result.contact) {
+        setToast(result.error || "Failed to create contact");
+        window.setTimeout(() => setToast(null), 2400);
+        return;
+      }
+      setContacts((prev) => [result.contact!, ...prev]);
+    }
     setEditingContact(null);
     setAddOpen(false);
   };
@@ -204,32 +232,25 @@ function ContactsPageClient({
     router.push(`/contacts/${contact.id}`);
   };
 
-  const handleImport = (rows: Record<string, string>[]) => {
+  const handleImport = async (rows: Record<string, string>[]) => {
     const created: ContactRecord[] = [];
     for (const row of rows) {
-      const record = buildContactRecord({
+      const result = await createContactAction({
         firstName: row.firstName ?? "",
         lastName: row.lastName ?? "",
         jobTitle: row.jobTitle ?? "",
         email: row.email ?? "",
         phone: row.phone ?? "",
         whatsapp: row.phone ?? "",
-        companyId: "",
-        companyName: row.companyName ?? "",
         lifecycleStage: "Lead",
-        ownerName: owners[0]?.name ?? "",
         source: "Manual",
         country: row.country ?? "",
         city: row.city ?? "",
-        address: "",
         tags: "",
-        preferredChannel: "Email",
-        preferredLanguage: "English",
       });
-      created.push(record);
+      if (result.contact) created.push(result.contact);
     }
     if (created.length > 0) {
-      created.forEach((record) => upsertContact(record));
       setContacts((prev) => [...created, ...prev]);
       setToast(`${created.length} ${created.length === 1 ? "contact" : "contacts"} imported`);
     }

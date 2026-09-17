@@ -10,14 +10,14 @@ import { CompaniesFilters, defaultCompaniesFilters, type CompaniesFilterState, t
 import { CompaniesHeader } from "@/components/companies/companies-header";
 import { CompaniesStats, type CompanyStats } from "@/components/companies/companies-stats";
 import { CompaniesTable } from "@/components/companies/companies-table";
-import { buildCompanyRecord, type CompanyFormData } from "@/lib/contact-form";
+import type { CompanyFormData } from "@/lib/contact-form";
+import { createCompanyAction, updateCompanyAction } from "@/app/companies/actions";
 import {
   markCompanyArchived,
   markCompanyDeleted,
   readArchivedCompanyIds,
   readDeletedCompanyIds,
   readStoredCompanies,
-  upsertCompany,
 } from "@/lib/crm-local";
 import { getCompanyDeals } from "@/lib/mock-companies";
 import type {
@@ -125,18 +125,7 @@ function CompaniesPageClient({
   }, [toast]);
 
   useEffect(() => {
-    const id = window.setTimeout(() => {
-      const stored = readStoredCompanies();
-      const storedDeleted = readDeletedCompanyIds();
-      const storedArchived = readArchivedCompanyIds();
-      if (stored.length > 0) {
-        const merged = [...stored, ...initialCompanies.filter((company) => !stored.some((candidate) => candidate.id === company.id))];
-        setCompanies(merged);
-      }
-      if (storedDeleted.length > 0) setDeleted(new Set(storedDeleted));
-      if (storedArchived.length > 0) setArchived(new Set(storedArchived));
-    }, 0);
-    return () => window.clearTimeout(id);
+    setCompanies(initialCompanies);
   }, [initialCompanies]);
 
   const ownerNames = useMemo(() => owners.map((owner) => owner.name), [owners]);
@@ -201,17 +190,48 @@ function CompaniesPageClient({
 
   const clearFilters = () => setFilters({ ...defaultCompaniesFilters });
 
-  const handleAddSubmit = (data: CompanyFormData) => {
-    setCompanies((prev) => {
-      if (editingCompany) {
-        const updated = buildCompanyRecord(data);
-        upsertCompany({ ...updated, id: editingCompany.id });
-        return prev.map((company) => (company.id === editingCompany.id ? { ...updated, id: editingCompany.id } : company));
+  const handleAddSubmit = async (data: CompanyFormData) => {
+    const owner = owners.find((candidate) => candidate.name === data.ownerName);
+    const input = {
+      name: data.name,
+      domain: data.domain,
+      website: data.website,
+      industry: data.industry,
+      companySize: data.companySize,
+      employeeCount: data.employeeCount,
+      annualRevenue: data.annualRevenue,
+      currency: data.currency,
+      phone: data.phone,
+      email: data.email,
+      country: data.country,
+      city: data.city,
+      address: data.address,
+      accountStatus: data.accountStatus,
+      ownerId: owner?.id,
+      source: data.source,
+      tags: data.tags,
+      description: data.description,
+    };
+
+    if (editingCompany) {
+      const result = await updateCompanyAction({ id: editingCompany.id, ...input });
+      if (result.error || !result.company) {
+        setToast(result.error || "Failed to update company");
+        window.setTimeout(() => setToast(null), 2400);
+        return;
       }
-      const created = buildCompanyRecord(data);
-      upsertCompany(created);
-      return [created, ...prev];
-    });
+      setCompanies((prev) =>
+        prev.map((company) => (company.id === editingCompany.id ? result.company! : company))
+      );
+    } else {
+      const result = await createCompanyAction(input);
+      if (result.error || !result.company) {
+        setToast(result.error || "Failed to create company");
+        window.setTimeout(() => setToast(null), 2400);
+        return;
+      }
+      setCompanies((prev) => [result.company!, ...prev]);
+    }
     setEditingCompany(null);
     setAddOpen(false);
   };
@@ -221,15 +241,15 @@ function CompaniesPageClient({
     router.push(`/companies/${company.id}`);
   };
 
-  const handleImport = (rows: Record<string, string>[]) => {
+  const handleImport = async (rows: Record<string, string>[]) => {
     const created: CompanyRecord[] = [];
     for (const row of rows) {
-      const record = buildCompanyRecord({
+      const result = await createCompanyAction({
         name: row.name ?? "",
         domain: row.domain ?? "",
         website: row.website ?? "",
-        industry: (row.industry as CompanyRecord["industry"]) || "Other",
-        companySize: (row.companySize as CompanyRecord["companySize"]) || "11-50",
+        industry: row.industry || "Other",
+        companySize: row.companySize || "11-50",
         employeeCount: row.employeeCount ?? "",
         annualRevenue: row.annualRevenue ?? "",
         currency: "PKR",
@@ -238,16 +258,13 @@ function CompaniesPageClient({
         country: row.country ?? "",
         city: row.city ?? "",
         address: "",
-        accountStatus: (row.accountStatus as CompanyAccountStatus) || "Prospect",
-        ownerName: owners[0]?.name ?? "",
+        accountStatus: row.accountStatus || "Prospect",
         source: "Manual",
         tags: "",
-        description: "",
       });
-      created.push(record);
+      if (result.company) created.push(result.company);
     }
     if (created.length > 0) {
-      created.forEach((record) => upsertCompany(record));
       setCompanies((prev) => [...created, ...prev]);
       setToast(`${created.length} ${created.length === 1 ? "company" : "companies"} imported`);
     }
