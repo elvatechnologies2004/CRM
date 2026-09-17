@@ -12,13 +12,13 @@ import { ContactsHeader } from "@/components/contacts/contacts-header";
 import { ContactsStats } from "@/components/contacts/contacts-stats";
 import { ContactsTable, contactFullName } from "@/components/contacts/contacts-table";
 import { buildContactRecord, type ContactFormData } from "@/lib/contact-form";
+import { createContactAction, updateContactAction } from "@/app/contacts/actions";
 import {
   markContactArchived,
   markContactDeleted,
   readArchivedContactIds,
   readDeletedContactIds,
   readStoredContacts,
-  upsertContact,
   writeContactTask,
 } from "@/lib/crm-local";
 import type {
@@ -120,18 +120,7 @@ function ContactsPageClient({
   }, [toast]);
 
   useEffect(() => {
-    const id = window.setTimeout(() => {
-      const stored = readStoredContacts();
-      const storedDeleted = readDeletedContactIds();
-      const storedArchived = readArchivedContactIds();
-      if (stored.length > 0) {
-        const merged = [...stored, ...initialContacts.filter((contact) => !stored.some((candidate) => candidate.id === contact.id))];
-        setContacts(merged);
-      }
-      if (storedDeleted.length > 0) setDeleted(new Set(storedDeleted));
-      if (storedArchived.length > 0) setArchived(new Set(storedArchived));
-    }, 0);
-    return () => window.clearTimeout(id);
+    setContacts(initialContacts);
   }, [initialContacts]);
 
   const ownerNames = useMemo(() => owners.map((owner) => owner.name), [owners]);

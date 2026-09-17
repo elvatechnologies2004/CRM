@@ -196,3 +196,55 @@ export async function createContact(input: ContactCreateInput): Promise<ContactR
   const owners = await fetchOwnerIndex(supabase, organizationId);
   return mapContactRow(data as unknown as ContactRow, owners);
 }
+
+export interface ContactUpdateInput extends Partial<ContactCreateInput> {
+  id: string;
+}
+
+export async function updateContact(input: ContactUpdateInput): Promise<ContactRecord | null> {
+  const supabase = await createSupabaseServerClient();
+  const organizationId = getOrgIdOrThrow(await getActiveOrgId(supabase));
+
+  const patch: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+  if (input.firstName !== undefined || input.lastName !== undefined) {
+    patch.first_name = input.firstName ?? undefined;
+    patch.last_name = input.lastName ?? undefined;
+    const current = await supabase
+      .from("contacts")
+      .select("first_name, last_name")
+      .eq("id", input.id)
+      .eq("organization_id", organizationId)
+      .maybeSingle();
+    patch.full_name = buildFullName(
+      input.firstName ?? (current.data?.first_name as string | null) ?? null,
+      input.lastName ?? (current.data?.last_name as string | null) ?? null,
+    );
+  }
+  if (input.email !== undefined) patch.email = input.email || null;
+  if (input.phone !== undefined) patch.phone = input.phone || null;
+  if (input.whatsapp !== undefined) patch.whatsapp = input.whatsapp || null;
+  if (input.companyId !== undefined) patch.company_id = input.companyId || null;
+  if (input.jobTitle !== undefined) patch.job_title = input.jobTitle || null;
+  if (input.lifecycleStage !== undefined) patch.lifecycle_stage = input.lifecycleStage;
+  if (input.ownerId !== undefined) patch.owner_id = input.ownerId || null;
+  if (input.source !== undefined) patch.source = input.source;
+  if (input.country !== undefined) patch.country = input.country || null;
+  if (input.city !== undefined) patch.city = input.city || null;
+  if (input.address !== undefined) patch.address = input.address || null;
+  if (input.preferredChannel !== undefined) patch.preferred_channel = input.preferredChannel;
+  if (input.tags !== undefined) patch.tags = input.tags;
+
+  const { data } = await supabase
+    .from("contacts")
+    .update(patch)
+    .eq("id", input.id)
+    .eq("organization_id", organizationId)
+    .select()
+    .single();
+
+  if (!data) return null;
+  const owners = await fetchOwnerIndex(supabase, organizationId);
+  return mapContactRow(data as unknown as ContactRow, owners);
+}

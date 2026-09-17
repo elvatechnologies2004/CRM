@@ -195,3 +195,46 @@ export async function createCompany(input: CompanyCreateInput): Promise<CompanyR
   const owners = await fetchOwnerIndex(supabase, organizationId);
   return mapCompanyRow(data as unknown as CompanyRow, owners);
 }
+
+export interface CompanyUpdateInput extends Partial<CompanyCreateInput> {
+  id: string;
+}
+
+export async function updateCompany(input: CompanyUpdateInput): Promise<CompanyRecord | null> {
+  const supabase = await createSupabaseServerClient();
+  const organizationId = getOrgIdOrThrow(await getActiveOrgId(supabase));
+
+  const patch: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+  if (input.name !== undefined) patch.name = input.name;
+  if (input.domain !== undefined) patch.domain = input.domain || null;
+  if (input.website !== undefined) patch.website = input.website || null;
+  if (input.industry !== undefined) patch.industry = input.industry;
+  if (input.companySize !== undefined) patch.company_size = input.companySize || null;
+  if (input.employeeCount !== undefined) patch.employee_count = input.employeeCount || null;
+  if (input.annualRevenue !== undefined) patch.annual_revenue = input.annualRevenue || null;
+  if (input.currency !== undefined) patch.currency = input.currency;
+  if (input.phone !== undefined) patch.phone = input.phone || null;
+  if (input.email !== undefined) patch.email = input.email || null;
+  if (input.country !== undefined) patch.country = input.country || null;
+  if (input.city !== undefined) patch.city = input.city || null;
+  if (input.address !== undefined) patch.address = input.address || null;
+  if (input.accountStatus !== undefined) patch.account_status = input.accountStatus;
+  if (input.ownerId !== undefined) patch.owner_id = input.ownerId || null;
+  if (input.source !== undefined) patch.source = input.source;
+  if (input.tags !== undefined) patch.tags = input.tags;
+  if (input.description !== undefined) patch.description = input.description || null;
+
+  const { data } = await supabase
+    .from("companies")
+    .update(patch)
+    .eq("id", input.id)
+    .eq("organization_id", organizationId)
+    .select()
+    .single();
+
+  if (!data) return null;
+  const owners = await fetchOwnerIndex(supabase, organizationId);
+  return mapCompanyRow(data as unknown as CompanyRow, owners);
+}
