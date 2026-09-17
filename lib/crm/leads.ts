@@ -291,7 +291,7 @@ export interface LeadUpdateInput extends Partial<LeadCreateInput> {
 
 export async function updateLead(input: LeadUpdateInput): Promise<LeadRecord | null> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = getOrgIdOrThrow(await getActiveOrgId(supabase));
+  const organizationId = ensureOrgForWrite(supabase);
 
   const patch: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
@@ -341,7 +341,7 @@ export async function updateLead(input: LeadUpdateInput): Promise<LeadRecord | n
 /** Soft-delete (archive) a lead (Step 71). */
 export async function archiveLead(id: string): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = getOrgIdOrThrow(await getActiveOrgId(supabase));
+  const organizationId = ensureOrgForWrite(supabase);
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -358,7 +358,7 @@ export async function archiveLead(id: string): Promise<boolean> {
 /** Convert a lead to a deal via the transactional RPC (Steps 52/57). */
 export async function convertLead(id: string): Promise<string | null> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = await getOrgIdOrThrow(await getActiveOrgId(supabase));
+  const organizationId = ensureOrgForWrite(supabase);
 
   const { data, error } = await supabase.rpc("convert_lead", { p_lead_id: id });
   if (error) {
@@ -405,7 +405,7 @@ export async function getLeadNotes(leadId: string): Promise<LeadNote[]> {
 
 export async function addLeadNote(leadId: string, body: string): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = getOrgIdOrThrow(await getActiveOrgId(supabase));
+  const organizationId = ensureOrgForWrite(supabase);
   const {
     data: { user },
   } = await supabase.auth.getUser();
