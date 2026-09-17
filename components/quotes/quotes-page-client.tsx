@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AddQuoteDialog } from "@/components/quotes/add-quote-dialog";
+import { readStoredQuotes, upsertQuote } from "@/lib/quote-local";
 import type { QuoteRecord, QuoteStatus } from "@/lib/types";
 
 interface QuotesPageClientProps {
@@ -11,7 +13,21 @@ interface QuotesPageClientProps {
 }
 
 function QuotesPageClient({ initialQuotes }: QuotesPageClientProps) {
-  const quotes = useMemo(() => initialQuotes, [initialQuotes]);
+  const [quotes, setQuotes] = useState<QuoteRecord[]>(() => {
+    const stored = readStoredQuotes();
+    return stored.length > 0 ? stored : initialQuotes;
+  });
+  const [addOpen, setAddOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const nextNumber = useMemo(() => {
+    const sequence = quotes.filter((q) => q.number.startsWith("QT-"));
+    const max = sequence.reduce((highest, q) => {
+      const numeric = Number(q.number.replace("QT-", ""));
+      return Number.isFinite(numeric) && numeric > highest ? numeric : highest;
+    }, 0);
+    return `QT-${String(max + 1).padStart(4, "0")}`;
+  }, [quotes]);
 
   const statusTone: Record<QuoteStatus, "success" | "warning" | "info" | "danger"> = {
     Draft: "info",
@@ -22,11 +38,18 @@ function QuotesPageClient({ initialQuotes }: QuotesPageClientProps) {
     Expired: "danger",
   };
 
+  const handleCreate = (quote: QuoteRecord) => {
+    upsertQuote(quote);
+    setQuotes((prev) => [quote, ...prev]);
+    setToast(`Quote ${quote.number} created`);
+    window.setTimeout(() => setToast(null), 2000);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold tracking-tight text-ink">Quotes</h1>
-        <Button size="sm" variant="ghost">
+        <Button size="sm" variant="ghost" onClick={() => setAddOpen(true)}>
           + New Quote
         </Button>
       </div>
@@ -62,6 +85,22 @@ function QuotesPageClient({ initialQuotes }: QuotesPageClientProps) {
           </p>
         )}
       </div>
+
+      <AddQuoteDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        onSubmit={handleCreate}
+        nextNumber={nextNumber}
+      />
+
+      {toast && (
+        <div
+          className="pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-ink px-4 py-2 text-sm text-white shadow-lg"
+          aria-live="polite"
+        >
+          {toast}
+        </div>
+      )}
     </div>
   );
 }
