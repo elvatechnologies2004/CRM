@@ -26,9 +26,11 @@ export async function ensureWorkspace() {
     company?: string;
   };
 
+  const orgName = metadata.company || user.email?.split("@")[0] || "Workspace";
+
   const { data: rpcData, error } = await supabase.rpc("create_workspace", {
-    p_org_name: metadata.company || "My Workspace",
-    p_first_name: metadata.first_name || user.email?.split("@")[0] || "",
+    p_org_name: orgName,
+    p_first_name: metadata.first_name || "",
     p_last_name: metadata.last_name || "",
     p_email: user.email ?? "",
   });
