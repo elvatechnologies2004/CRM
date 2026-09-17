@@ -202,7 +202,7 @@ export interface LeadCreateInput {
 
 export async function createLead(input: LeadCreateInput): Promise<LeadRecord | null> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = getOrgIdOrThrow(await getActiveOrgId(supabase));
+  const organizationId = ensureOrgForWrite(supabase);
   const {
     data: { user },
   } = await supabase.auth.getUser();
