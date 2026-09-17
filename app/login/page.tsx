@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { BarChart3, ListChecks, Zap } from "lucide-react";
+import { BarChart3, List, Zap } from "lucide-react";
 
 import { AuthShell } from "@/components/auth/auth-shell";
 import { LoginForm } from "@/components/auth/login-form";
@@ -8,7 +8,7 @@ import { LoginForm } from "@/components/auth/login-form";
 export const metadata = { title: "Sign in" };
 
 const FEATURES = [
-  { icon: ListChecks, title: "Organize", subtitle: "Your Pipeline" },
+  { icon: List, title: "Organize", subtitle: "Your Pipeline" },
   { icon: BarChart3, title: "Track", subtitle: "Performance" },
   { icon: Zap, title: "Automate", subtitle: "Growth" },
 ];
@@ -28,13 +28,13 @@ export default async function LoginPage({
       title="Welcome Back"
       description="Sign in to your FinloNexa CRM account"
       asideAction={
-        <div className="flex items-center gap-3">
-          <span className="hidden text-sm font-medium text-white sm:inline">
+        <div className="flex items-center gap-[14px]">
+          <span className="hidden text-[14px] font-medium text-white sm:inline">
             New here?
           </span>
           <Link
             href="/signup"
-            className="inline-flex items-center rounded-full border border-white/60 bg-white/10 px-[18px] py-2.5 text-sm font-medium text-white backdrop-blur-md transition-colors hover:bg-white/20"
+            className="inline-flex items-center rounded-full border border-white/90 bg-white/15 px-[22px] py-[9px] text-[14px] font-medium text-white backdrop-blur-[10px] transition-colors hover:bg-white/30"
           >
             Create Account
           </Link>
@@ -42,42 +42,30 @@ export default async function LoginPage({
       }
       branding={
         <div className="flex flex-col">
-          {/* Brand — FinloNexa / CRM, top-left, outside any card */}
-          <div className="mb-16 flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">
-              F
-            </div>
-            <div className="flex flex-col leading-tight">
-              <span className="text-lg font-bold tracking-tight text-[#0B183D]">
-                FinloNexa
-              </span>
-              <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#64748B]">
-                CRM
-              </span>
-            </div>
-          </div>
-
-          {/* Headline — no box behind it. Localized gradient (in the shell) keeps it readable. */}
-          <h1 className="max-w-2xl text-[clamp(3.5rem,4.9vw,4rem)] font-bold leading-[1.02] tracking-[-0.02em]">
-            <span className="block text-[#0B183D]">Relationships</span>
-            <span className="block text-[#7C8CFF]">Drive Revenue.</span>
+          {/* Headline — dark navy + blue accent, matches reference hero */}
+          <h1 className="text-[clamp(42px,5.5vw,66px)] font-extrabold leading-[1.05] tracking-[-1.5px] text-[#081957]">
+            Relationships
+          </h1>
+          <h1 className="mb-[22px] text-[clamp(42px,5.5vw,66px)] font-extrabold leading-[1.05] tracking-[-1.5px] text-[#5F7EF9]">
+            Drive Revenue.
           </h1>
 
-          <p className="mt-6 max-w-[520px] text-[17px] leading-[1.55] text-[#33415F]">
+          <p className="mb-[42px] max-w-[380px] text-[17px] leading-[1.65] text-[#182d4e]">
             A modern CRM to manage leads, close deals and grow your business — all in one place.
           </p>
 
-          {/* Compact 3-column feature row — icons only, no long descriptions */}
-          <div className="mt-10 grid w-[min(540px,100%)] grid-cols-3 gap-x-8 gap-y-5">
+          {/* Feature cards — horizontal 3-column row, liquid-glass rectangles, auto width */}
+          <div className="flex flex-col gap-[26px] md:flex-row md:gap-[18px]">
             {FEATURES.map(({ icon: Icon, title, subtitle }) => (
-              <div key={title} className="flex flex-col gap-2.5">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[rgba(124,140,255,0.22)] bg-[rgba(187,200,255,0.30)]">
-                  <Icon className="h-5 w-5 text-[#7C8CFF]" aria-hidden />
+              <div key={title} className="flex items-center gap-[14px] rounded-[18px] border border-white/70 bg-white/40 px-[18px] py-[14px] shadow-[0_16px_40px_rgba(0,20,60,0.15),inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-[24px] backdrop-saturate-[1.4]">
+                <div className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full border border-white/60 bg-white/50 backdrop-blur-[10px]">
+                  <Icon strokeWidth={1.8} className="h-5 w-5 text-[#4a72e0]" aria-hidden />
                 </div>
-                <div className="text-[15px] font-semibold leading-snug text-[#0B183D]">
-                  {title}
-                  <br />
-                  {subtitle}
+                <div className="flex flex-col whitespace-nowrap">
+                  <span className="text-[15px] font-extrabold leading-tight text-[#081957]">
+                    {title}
+                  </span>
+                  <span className="text-[12px] text-[#081957]">{subtitle}</span>
                 </div>
               </div>
             ))}
@@ -85,9 +73,9 @@ export default async function LoginPage({
         </div>
       }
       footer={
-        <p className="text-sm text-[#475569]">
+        <p className="text-[13px] text-[#6879a0]">
           Don&apos;t have an account?{" "}
-          <Link href="/signup" className="font-semibold text-[#6577F3] hover:underline">
+          <Link href="/signup" className="font-semibold text-[#4a72e0] hover:underline">
             Create Account
           </Link>
         </p>

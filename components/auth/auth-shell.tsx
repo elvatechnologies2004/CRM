@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import Image from "next/image";
+import Link from "next/link";
 
 import {
   Card,
@@ -18,21 +19,23 @@ interface AuthShellProps {
   footer?: React.ReactNode;
   className?: string;
   /**
-   * Premium split layout (branding column + right login card) used ONLY by the
-   * login page. Defaults to the centered card so signup stays byte-identical.
+   * Premium split layout (scenic backdrop + left branding column + right login card)
+   * used ONLY by the login page. Defaults to the centered card so signup stays byte-identical.
    */
   variant?: "center" | "split";
-  /** Left-hand premium branding column — only rendered when variant="split". */
+  /** Left-hand branding column — only rendered when variant="split". */
   branding?: React.ReactNode;
   /** Top-right action (e.g. "New here? Create Account") — only in split mode. */
   asideAction?: React.ReactNode;
+  /** Backdrop image used by the "center" variant (signup). Defaults to auth-backdrop.png. */
+  background?: string;
 }
 
 /**
- * Shared auth frame. The scenic background (Image + ink scrim) is the FROZEN,
- * correct implementation — do not replace, brighten, or overlay it.
- * "center" keeps the original centered auth card for signup; "split" renders
- * the premium two-column login layout with the exact same background.
+ * Shared auth frame.
+ * "center" keeps the original centered auth card + scenic image backdrop for signup.
+ * "split" renders the login page: the CSS lake/mountain scenic scene + navy branding
+ * column + frosted login card, matching the FinloNexa reference.
  */
 export function AuthShell({
   title,
@@ -43,14 +46,15 @@ export function AuthShell({
   variant = "center",
   branding,
   asideAction,
+  background = "/auth-backdrop.png",
 }: AuthShellProps) {
   // Centered layout — original markup, unchanged (used by signup).
   if (variant === "center" || !branding) {
     return (
       <div className="relative flex min-h-svh w-full flex-col items-center justify-center overflow-hidden bg-ink px-4 py-10">
-        {/* FROZEN: shared auth backdrop (login + signup) from public/auth-backdrop.png */}
+        {/* Backdrop image (signup) from public/{background} */}
         <Image
-          src="/auth-backdrop.png"
+          src={background}
           alt=""
           fill
           priority
@@ -95,12 +99,27 @@ export function AuthShell({
     );
   }
 
-  // Premium split layout — login only. Background stays identical to center mode.
+  // Split layout — login only, matching the FinloNexa reference (icon bar = FinloNexa logo,
+  // 3 bars with low/mid/high heights, #4a72e0).
+  const logoMark = (
+    <svg
+      width="34"
+      height="34"
+      viewBox="0 0 34 34"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <rect x="2" y="17" width="7" height="15" rx="1.8" fill="#4a72e0" opacity="0.65" />
+      <rect x="13" y="10" width="7" height="22" rx="1.8" fill="#4a72e0" opacity="0.82" />
+      <rect x="24" y="3" width="7" height="29" rx="1.8" fill="#4a72e0" />
+    </svg>
+  );
+
   return (
-    <div className="relative flex min-h-svh w-full flex-col items-center justify-between overflow-hidden bg-ink px-6 py-6 sm:px-8 lg:px-12">
-      {/* FROZEN: scenic auth backdrop (login + signup) from public/auth-backdrop.png — do not replace, recolor, darken or blur. */}
+    <div className="relative flex min-h-svh w-full flex-col overflow-hidden">
+      {/* Sign-in scenic background — signin-bg.png */}
       <Image
-        src="/auth-backdrop.png"
+        src="/signin-bg.png"
         alt=""
         fill
         priority
@@ -108,73 +127,77 @@ export function AuthShell({
         className="select-none object-cover"
         aria-hidden
       />
-      {/* SOLVED LOCALLY: readability is handled by a soft light gradient behind ONLY the
-          branding text (left column) — not by darkening the backdrop. */}
 
-      {/* Top-right — "New here?" + glass Create Account (separate) */}
-      {asideAction ? (
-        <div className="relative z-10 flex w-full justify-end">
-          {asideAction}
-        </div>
-      ) : null}
-
-      {/* Grid — premium branding column (desktop/tablet) + centered glass card.
-          Column heights are stretched so the left hero centerlines with the card. */}
-      <div className="relative z-10 grid w-full flex-1 grid-cols-1 items-stretch gap-10 lg:grid-cols-[1.02fr_1fr]">
-        {/*
-          LEFT — premium branding column.
-          On mobile the full column is hidden; the logo + card stay centered instead.
-          Height is anchored inside so logo pins top, hero stays center, tagline pins bottom.
-        */}
-        <div className="relative hidden h-full flex-col lg:flex">
-          {/* NON-CARD readability gradient — opaque rectangle REMOVED. This is a plain
-              90deg white wipe that fades to transparent (no radius, border, shadow or blur),
-              covers only the text column, and lets the scenic image show through. */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 left-0"
-            style={{
-              width: "52%",
-              background:
-                "linear-gradient(90deg, rgba(244,247,253,0.55) 0%, rgba(244,247,253,0.28) 55%, rgba(244,247,253,0) 100%)",
-            }}
-          />
-          <div className="relative">{branding}</div>
-        </div>
-
-        {/* RIGHT — premium glass login card */}
-        <div
-          className={cn(
-            "mx-auto flex w-full flex-col justify-center",
-            className
-          )}
-          style={{ maxWidth: "min(520px, 100%)" }}
-        >
-          {/* Mobile logo — keeps the brand visible when the branding column is hidden */}
-          <div className="mb-6 flex items-center justify-center gap-2.5 lg:hidden">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
-              F
+      {/* Foreground content */}
+      <div className="relative z-10 flex min-h-svh flex-col">
+        {/* Top nav — logo left, asideAction right */}
+        <nav className="flex w-full items-center justify-between px-5 py-[22px] sm:px-11">
+          <div className="flex items-center gap-[11px]">
+            {logoMark}
+            <div>
+              <div className="text-[19px] font-extrabold leading-none tracking-[-0.2px] text-[#0c1f3d]">
+                FinloNexa
+              </div>
+              <div className="mt-[1px] text-[11px] font-semibold tracking-[1.5px] text-[#2e4a7a]">
+                CRM
+              </div>
             </div>
-            <div className="text-lg font-semibold tracking-tight text-ink">FinloNexa CRM</div>
           </div>
+          {asideAction}
+        </nav>
 
-          <Card className="rounded-[1.75rem] border-[rgba(255,255,255,0.65)] bg-[rgba(244,247,253,0.88)] shadow-[0_24px_70px_-24px_rgba(124,140,255,0.45),0_8px_28px_-14px_rgba(2,10,35,0.18),inset_0_1px_0_0_rgba(255,255,255,0.8)] backdrop-blur-[22px]">
-            <CardHeader className="space-y-1.5 px-9 pb-6 pt-9">
-              <CardTitle className="text-2xl font-semibold tracking-tight text-ink">
-                {title}
-              </CardTitle>
-              {description ? (
-                <CardDescription className="text-sm text-[#475569]">{description}</CardDescription>
-              ) : null}
-            </CardHeader>
-            <CardContent className="space-y-4 px-9 pb-7">{children}</CardContent>
-            {/* Auth links INSIDE the card — never floating below it */}
-            {footer ? (
-              <div className="px-9 pb-9 pt-3 text-center text-sm text-[#475569]">{footer}</div>
-            ) : null}
-          </Card>
+        {/* Body — hero left, glass card right (stacks below lg) */}
+        <div className="flex flex-1 flex-col items-center gap-10 px-5 pb-11 pt-[10px] lg:flex-row lg:px-11">
+          {branding ? (
+            <div className="w-full flex-1 lg:pl-[5%] lg:pr-[60px]">{branding}</div>
+          ) : null}
+
+          {/* Right — frosted login card */}
+          <div
+            className={cn(
+              "mx-auto w-full max-w-[452px] shrink-0",
+              className
+            )}
+          >
+            <div className="group relative overflow-hidden rounded-[24px] border border-white/70 bg-white/60 px-[42px] pb-[34px] pt-[42px] shadow-[0_24px_64px_rgba(0,20,60,0.2),0_4px_16px_rgba(0,0,0,0.07),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-[24px] backdrop-saturate-[1.4]">
+              <div className="relative">
+                <div className="mb-[30px] text-center">
+                  <h2 className="mb-[7px] text-[25px] font-extrabold tracking-[-0.3px] text-[#0c1f3d]">
+                    {title}
+                  </h2>
+                  {description ? (
+                    <p className="text-[13.5px] text-[#6879a0]">{description}</p>
+                  ) : null}
+                </div>
+                {children}
+                {/* Auth links INSIDE the card — never floating below it */}
+                {footer ? (
+                  <div className="mt-[22px] text-center text-[13px] text-[#6879a0]">{footer}</div>
+                ) : null}
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* Page footer — tagline left, © + legal links right */}
+        <footer className="flex w-full items-center justify-between gap-4 px-5 py-[14px] sm:px-11">
+          {/* Bottom-left tagline — hairline + text */}
+          <div className="flex items-center gap-3">
+            <div aria-hidden className="h-[2px] w-[28px] bg-white/80" />
+            <p className="text-[13px] font-normal text-[rgba(255,255,255,0.85)]">
+              A Smarter CRM for a Brighter Tomorrow
+            </p>
+          </div>
+          <nav className="flex items-center gap-[22px]">
+            <span className="text-[12px] text-white/65">
+              © 2026 FinloNexa. All rights reserved.
+            </span>
+            <Link href="/privacy" className="text-[12px] font-medium text-white/75 transition-colors hover:text-white">Privacy</Link>
+            <Link href="/terms" className="text-[12px] font-medium text-white/75 transition-colors hover:text-white">Terms</Link>
+            <Link href="/help" className="text-[12px] font-medium text-white/75 transition-colors hover:text-white">Help &amp; Support</Link>
+          </nav>
+        </footer>
       </div>
     </div>
   );
-} 
+}
