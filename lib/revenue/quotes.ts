@@ -8,6 +8,60 @@ import "server-only";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getActiveOrgId } from "@/lib/crm/base";
+import type { QuoteRecord, QuoteStatus } from "@/lib/types";
+
+interface QuoteListRow {
+  id: string;
+  quote_number: string | null;
+  company_id: string | null;
+  contact_id: string | null;
+  deal_id: string | null;
+  status: string | null;
+  issue_date: string | null;
+  expiry_date: string | null;
+  currency: string | null;
+  subtotal: number | null;
+  discount_total: number | null;
+  tax_total: number | null;
+  total: number | null;
+  terms: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  companies?: { name: string } | null;
+  contacts?: { first_name: string | null; last_name: string | null } | null;
+  deals?: { name: string } | null;
+}
+
+/** Map a Supabase quote row (with embeds) to the frontend QuoteRecord shape. */
+export function mapQuoteRowToRecord(row: QuoteListRow): QuoteRecord {
+  const customerName = row.companies?.name
+    ? row.companies.name
+    : row.contacts
+      ? `${row.contacts.first_name ?? ""} ${row.contacts.last_name ?? ""}`.trim() || "—"
+      : "—";
+  return {
+    id: row.id,
+    number: row.quote_number ?? "",
+    companyId: row.company_id ?? undefined,
+    customerName,
+    dealId: row.deal_id ?? undefined,
+    dealName: row.deals?.name ?? undefined,
+    issueDate: row.issue_date ?? "",
+    expiryDate: row.expiry_date ?? "",
+    currency: row.currency ?? "USD",
+    lineItems: [],
+    subtotal: row.subtotal ?? 0,
+    discount: row.discount_total ?? 0,
+    tax: row.tax_total ?? 0,
+    total: row.total ?? 0,
+    status: (row.status as QuoteStatus) ?? "Draft",
+    terms: row.terms ?? undefined,
+    notes: row.notes ?? undefined,
+    createdAt: row.created_at,
+    timeline: [],
+  };
+}
 
 export interface CreateQuoteParams {
   dealId?: string;
@@ -286,5 +340,5 @@ export async function getAllQuotes(status?: string) {
     return { quotes: [], error: error.message };
   }
 
-  return { quotes: data || [], error: null };
+  return { quotes: (data || []).map((row) => mapQuoteRowToRecord(row as unknown as QuoteListRow)), error: null };
 }

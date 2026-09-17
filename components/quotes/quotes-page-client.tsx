@@ -5,19 +5,18 @@ import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AddQuoteDialog } from "@/components/quotes/add-quote-dialog";
-import { readStoredQuotes, upsertQuote } from "@/lib/quote-local";
+import { createQuoteAction } from "@/app/quotes/actions";
 import type { QuoteRecord, QuoteStatus } from "@/lib/types";
 
 interface QuotesPageClientProps {
   initialQuotes: QuoteRecord[];
+  initialError?: string | null;
 }
 
 function QuotesPageClient({ initialQuotes }: QuotesPageClientProps) {
-  const [quotes, setQuotes] = useState<QuoteRecord[]>(() => {
-    const stored = readStoredQuotes();
-    return stored.length > 0 ? stored : initialQuotes;
-  });
+  const [quotes, setQuotes] = useState<QuoteRecord[]>(initialQuotes);
   const [addOpen, setAddOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   const nextNumber = useMemo(() => {
@@ -38,10 +37,54 @@ function QuotesPageClient({ initialQuotes }: QuotesPageClientProps) {
     Expired: "danger",
   };
 
-  const handleCreate = (quote: QuoteRecord) => {
-    upsertQuote(quote);
-    setQuotes((prev) => [quote, ...prev]);
-    setToast(`Quote ${quote.number} created`);
+  const handleCreate = async (data: {
+    customerName: string;
+    dealName?: string;
+    total: number;
+    status: QuoteStatus;
+    issueDate: string;
+    expiryDate?: string;
+    notes?: string;
+  }) => {
+    setBusy(true);
+    const result = await createQuoteAction({
+      customerName: data.customerName,
+      dealName: data.dealName,
+      total: data.total,
+      status: data.status,
+      currency: "USD",
+      issue_date: data.issueDate,
+      expiry_date: data.expiryDate || null,
+      notes: data.notes,
+    });
+    setBusy(false);
+
+    if (result.error || !result.quote) {
+      setToast(result.error || "Failed to create quote");
+      window.setTimeout(() => setToast(null), 2400);
+      return;
+    }
+
+    const created: QuoteRecord = {
+      id: result.quote.id,
+      number: result.quote.number,
+      customerName: result.quote.customerName,
+      dealName: result.quote.dealName,
+      total: result.quote.total,
+      status: result.quote.status as QuoteStatus,
+      createdAt: result.quote.createdAt,
+      issueDate: data.issueDate,
+      expiryDate: data.expiryDate ?? "",
+      currency: "USD",
+      lineItems: [],
+      subtotal: data.total,
+      discount: 0,
+      tax: 0,
+      timeline: [],
+    };
+    setQuotes((prev) => [created, ...prev]);
+    setAddOpen(false);
+    setToast(`Quote ${created.number} created`);
     window.setTimeout(() => setToast(null), 2000);
   };
 
@@ -91,6 +134,7 @@ function QuotesPageClient({ initialQuotes }: QuotesPageClientProps) {
         onOpenChange={setAddOpen}
         onSubmit={handleCreate}
         nextNumber={nextNumber}
+        busy={busy}
       />
 
       {toast && (
