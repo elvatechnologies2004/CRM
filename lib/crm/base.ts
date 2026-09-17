@@ -81,11 +81,23 @@ export function getOrgIdOrThrow(organizationId: string | null): string {
  * onboard step otherwise hit "No active workspace" on the first write.
  */
 export async function ensureOrgForWrite(supabase: DbClient): Promise<string> {
+  // 1️⃣ First try to find an existing active organization for this user.
+  const { data: members } = await supabase
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", (await supabase.auth.getUser()).data.user.id)
+    .maybeSingle();
+
+  if (members?.organization_id) {
+    // User already belongs to an org – use it.
+    const { data } = await supabase.rpc("current_organization_id");
+    return getOrgIdOrThrow((data as string | null) ?? members.organization_id);
+  }
+
+  // 2️⃣ No existing org – try to bootstrap a new workspace.
   const existing = await getActiveOrgId(supabase);
   if (existing) return existing;
 
-  // Try to bootstrap the workspace; if it fails (e.g. slug collision),
-  // continue and try to resolve the org ID anyway.
   try {
     const { ensureWorkspace } = await import("@/lib/crm/workspace");
     await ensureWorkspace();
