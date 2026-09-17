@@ -26,6 +26,7 @@ export async function ensureWorkspace() {
     company?: string;
   };
 
+  // Use email prefix for unique org name (avoids slug collision with existing orgs)
   const orgName = metadata.company || user.email?.split("@")[0] || "Workspace";
 
   const { data: rpcData, error } = await supabase.rpc("create_workspace", {
@@ -37,6 +38,7 @@ export async function ensureWorkspace() {
 
   if (error) {
     console.error("[workspace] create_workspace failed", error.message);
+    // Return null so ensureOrgForWrite can try alternative resolution
     return null;
   }
 
