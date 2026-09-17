@@ -16,6 +16,7 @@ import { AddTaskDialog, type NewTaskData } from "@/components/leads/add-task-dia
 import { ImportLeadDialog } from "@/components/leads/import-lead-dialog";
 import { fullName } from "@/components/leads/lead-row";
 import { createLeadAction, updateLeadAction } from "@/app/leads/actions";
+import type { LeadFormData } from "@/lib/lead-form";
 import {
   markLeadDeleted,
   readConvertedDeals,
