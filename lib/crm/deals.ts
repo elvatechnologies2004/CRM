@@ -324,6 +324,73 @@ export async function moveDealStage(id: string, stageId: string, applyProbabilit
   return true;
 }
 
+export interface DealUpdateInput {
+  id: string;
+  name?: string;
+  stageId?: string;
+  value?: number;
+  currency?: string;
+  probability?: number;
+  expectedCloseDate?: string;
+  ownerId?: string;
+  source?: string;
+  description?: string;
+}
+
+/** Update an existing deal. Returns the updated DealRecord, or null. */
+export async function updateDeal(input: DealUpdateInput): Promise<DealRecord | null> {
+  const supabase = await createSupabaseServerClient();
+  const organizationId = getOrgIdOrThrow(await getActiveOrgId(supabase));
+
+  const patch: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+  let probability = input.probability;
+  if (input.value !== undefined || input.probability !== undefined || input.stageId !== undefined) {
+    if (probability === undefined) {
+      if (input.stageId !== undefined) {
+        const { data: stage } = await supabase
+          .from("pipeline_stages")
+          .select("default_probability")
+          .eq("id", input.stageId)
+          .maybeSingle();
+        probability = stage?.default_probability ?? 0;
+      } else {
+        const { data: current } = await supabase
+          .from("deals")
+          .select("probability")
+          .eq("id", input.id)
+          .eq("organization_id", organizationId)
+          .maybeSingle();
+        probability = current?.probability ?? 0;
+      }
+    }
+    patch.probability = probability;
+    if (input.value !== undefined) {
+      patch.value = input.value;
+      patch.expected_revenue = Math.round(input.value * probability) / 100;
+    }
+  }
+  if (input.name !== undefined) patch.name = input.name;
+  if (input.stageId !== undefined) patch.stage_id = input.stageId;
+  if (input.currency !== undefined) patch.currency = input.currency;
+  if (input.expectedCloseDate !== undefined) patch.expected_close_date = input.expectedCloseDate || null;
+  if (input.ownerId !== undefined) patch.owner_id = input.ownerId || null;
+  if (input.source !== undefined) patch.source = input.source;
+  if (input.description !== undefined) patch.description = input.description;
+
+  const { data } = await supabase
+    .from("deals")
+    .update(patch)
+    .eq("id", input.id)
+    .eq("organization_id", organizationId)
+    .select()
+    .single();
+
+  if (!data) return null;
+  return getDealById(data.id);
+}
+
 export async function archiveDeal(id: string): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
   const organizationId = getOrgIdOrThrow(await getActiveOrgId(supabase));

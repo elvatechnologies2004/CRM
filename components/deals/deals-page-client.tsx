@@ -10,11 +10,8 @@ import { DealsFilters, defaultDealFilters, type DealFilterState, type DealsViewM
 import { DealsStats } from "@/components/crm/deals-stats";
 import { AddDealDialog } from "@/components/deals/add-deal-dialog";
 import { DealsTable } from "@/components/deals/deals-table";
-import { buildDealRecord, type DealFormData, type DealEditFormData, applyDealEdit } from "@/lib/deal-form";
-import {
-  readStoredDeals,
-  upsertDeal,
-} from "@/lib/deal-local";
+import { createDealAction, updateDealAction } from "@/app/deals/actions";
+import type { DealFormData, DealEditFormData } from "@/lib/deal-form";
 import type { DealRecord } from "@/lib/types";
 
 interface DealsPageClientProps {
@@ -91,12 +88,7 @@ function DealsPageClient({
   }, [toast]);
 
   useEffect(() => {
-    const id = window.setTimeout(() => {
-      const stored = readStoredDeals();
-      const merged = [...stored, ...initialDeals.filter((deal) => !stored.some((c) => c.id === deal.id))];
-      setDeals(merged);
-    }, 0);
-    return () => window.clearTimeout(id);
+    setDeals(initialDeals);
   }, [initialDeals]);
 
   const stats = useMemo(() => {
@@ -173,40 +165,52 @@ function DealsPageClient({
 
   const clearFilters = () => setFilters({ ...defaultDealFilters });
 
-  const handleAddSubmit = (data: DealFormData) => {
-    setDeals((prev) => {
-      const newDeal = buildDealRecord(data);
-      upsertDeal(newDeal);
-      return [newDeal, ...prev];
+  const handleAddSubmit = async (data: DealFormData) => {
+    const result = await createDealAction({
+      name: data.name,
+      value: Number(data.value) || 0,
+      currency: data.currency,
+      probability: data.probability ? Number(data.probability) : undefined,
+      expectedCloseDate: data.expectedCloseDate,
+      stageId: data.stageId,
+      ownerId: data.ownerId,
+      source: data.source,
+      description: data.description,
     });
+    if (result.error || !result.deal) {
+      setToast(result.error || "Failed to create deal");
+      window.setTimeout(() => setToast(null), 2400);
+      return;
+    }
+    setDeals((prev) => [result.deal!, ...prev]);
     setEditingDeal(null);
     setAddOpen(false);
     setToast("Deal added");
     window.setTimeout(() => setToast(null), 2000);
   };
 
-  const handleEditSubmit = (data: DealFormData) => {
+  const handleEditSubmit = async (data: DealFormData) => {
     if (!editingDeal) return;
-    const edit: DealEditFormData = {
+    const result = await updateDealAction({
+      id: editingDeal.id,
       name: data.name,
-      value: data.value ?? "",
-      currency: data.currency ?? editingDeal.currency,
-      probability: data.probability ?? "",
-      expectedCloseDate: data.expectedCloseDate ?? editingDeal.expectedCloseDate,
-      stageId: data.stageId ?? editingDeal.stageId,
-      ownerId: data.ownerId ?? editingDeal.ownerId,
-      ownerName: data.ownerName ?? editingDeal.ownerName,
-      description: data.description ?? "",
-      tags: data.tags ?? "",
-      source: data.source ?? editingDeal.source,
-      products: data.products ?? editingDeal.products,
-    };
+      value: data.value ? Number(data.value) : undefined,
+      currency: data.currency,
+      probability: data.probability ? Number(data.probability) : undefined,
+      expectedCloseDate: data.expectedCloseDate,
+      stageId: data.stageId,
+      ownerId: data.ownerId,
+      source: data.source,
+      description: data.description,
+    });
+    if (result.error || !result.deal) {
+      setToast(result.error || "Failed to update deal");
+      window.setTimeout(() => setToast(null), 2400);
+      return;
+    }
+    const updated = result.deal!;
     setDeals((prev) =>
-      prev.map((deal) =>
-        deal.id === editingDeal.id
-          ? { ...deal, ...applyDealEdit(deal, edit), updatedAt: new Date().toISOString() }
-          : deal
-      )
+      prev.map((deal) => (deal.id === editingDeal.id ? { ...deal, ...updated } : deal))
     );
     setEditingDeal(null);
     setAddOpen(false);
@@ -291,22 +295,19 @@ function DealsPageClient({
           { key: "probability", label: "Probability" },
           { key: "expectedCloseDate", label: "Expected Close Date" },
         ]}
-        onImport={(rows) => {
+        onImport={async (rows) => {
           const created: DealRecord[] = [];
           for (const row of rows) {
-            const deal = buildDealRecord({
+            const result = await createDealAction({
               name: row.name ?? "",
-              companyId: "",
-              companyName: row.companyName ?? "",
+              value: Number(row.value) || 0,
+              probability: row.probability ? Number(row.probability) : undefined,
+              expectedCloseDate: row.expectedCloseDate || undefined,
               stageId: row.stageId as DealRecord["stageId"] ?? "new",
-              value: row.value ?? "",
-              probability: row.probability ?? "",
-              expectedCloseDate: row.expectedCloseDate ?? new Date().toISOString(),
             });
-            created.push(deal);
+            if (result.deal) created.push(result.deal);
           }
           if (created.length > 0) {
-            created.forEach((record) => upsertDeal(record));
             setDeals((prev) => [...created, ...prev]);
             setToast(`${created.length} deals imported`);
             window.setTimeout(() => setToast(null), 2000);
