@@ -34,8 +34,9 @@ export async function createQuoteAction(
       input.total > 0
         ? [
             {
-              name_snapshot: input.customerName,
-              description: input.dealName,
+              name_snapshot: input.dealName
+                ? `${input.dealName} — ${input.customerName}`
+                : input.customerName,
               quantity: 1,
               unit_price: input.total,
             },

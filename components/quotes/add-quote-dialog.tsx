@@ -22,13 +22,22 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { quoteStatuses } from "@/lib/mock-quotes";
-import type { QuoteRecord, QuoteStatus } from "@/lib/types";
+import type { QuoteStatus } from "@/lib/types";
 
 interface AddQuoteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (quote: QuoteRecord) => void;
+  onSubmit: (data: {
+    customerName: string;
+    dealName?: string;
+    total: number;
+    status: QuoteStatus;
+    issueDate: string;
+    expiryDate?: string;
+    notes?: string;
+  }) => void;
   nextNumber: string;
+  busy?: boolean;
 }
 
 function AddQuoteDialog({
@@ -36,6 +45,7 @@ function AddQuoteDialog({
   onOpenChange,
   onSubmit,
   nextNumber,
+  busy = false,
 }: AddQuoteDialogProps) {
   const [customerName, setCustomerName] = useState("");
   const [dealName, setDealName] = useState("");
@@ -51,28 +61,13 @@ function AddQuoteDialog({
     e.preventDefault();
     const parsedTotal = Math.max(0, Number(total) || 0);
     onSubmit({
-      id: crypto.randomUUID(),
-      number: nextNumber,
       customerName: customerName.trim(),
       dealName: dealName.trim() || undefined,
-      issueDate: issueDate || new Date().toISOString(),
-      expiryDate: expiryDate || issueDate || new Date().toISOString(),
-      currency: "USD",
-      lineItems: [],
-      subtotal: parsedTotal,
-      discount: 0,
-      tax: 0,
       total: parsedTotal,
       status,
+      issueDate: issueDate || new Date().toISOString().slice(0, 10),
+      expiryDate: expiryDate || undefined,
       notes: notes.trim() || undefined,
-      createdAt: new Date().toISOString(),
-      timeline: [
-        {
-          id: crypto.randomUUID(),
-          event: "Quote created",
-          at: new Date().toISOString(),
-        },
-      ],
     });
     setCustomerName("");
     setDealName("");

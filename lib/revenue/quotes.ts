@@ -67,6 +67,7 @@ export interface CreateQuoteParams {
   dealId?: string;
   company_id?: string;
   contact_id?: string;
+  status?: "Draft" | "Sent" | "Viewed" | "Accepted" | "Rejected" | "Expired";
   issue_date?: string;
   expiry_date?: string;
   currency?: string;
@@ -142,7 +143,7 @@ export async function createQuote(params: CreateQuoteParams) {
       deal_id: params.dealId || null,
       company_id: params.company_id || null,
       contact_id: params.contact_id || null,
-      status: "Draft",
+      status: params.status || "Draft",
       issue_date: params.issue_date || new Date().toISOString().split("T")[0],
       expiry_date: params.expiry_date || null,
       currency: params.currency || "PKR",
