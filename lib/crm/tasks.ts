@@ -1,4 +1,4 @@
-import "server-only";
+﻿import "server-only";
 
 import {
   getActiveOrgId,
@@ -160,7 +160,7 @@ export interface TaskCreateInput {
 
 export async function createTask(input: TaskCreateInput): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = getOrgIdOrThrow(await getActiveOrgId(supabase));
+  const organizationId = ensureOrgForWrite(supabase);
   const { data: userData } = await supabase.auth.getUser();
 
   const { error } = await supabase.from("tasks").insert({
@@ -188,7 +188,7 @@ export async function createTask(input: TaskCreateInput): Promise<boolean> {
 /** Complete / reopen a task (Step 58). */
 export async function setTaskStatus(id: string, status: string): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = getOrgIdOrThrow(await getActiveOrgId(supabase));
+  const organizationId = ensureOrgForWrite(supabase);
 
   const { error } = await supabase
     .from("tasks")
@@ -205,7 +205,7 @@ export async function setTaskStatus(id: string, status: string): Promise<boolean
 
 export async function deleteTask(id: string): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = getOrgIdOrThrow(await getActiveOrgId(supabase));
+  const organizationId = ensureOrgForWrite(supabase);
   const { error } = await supabase
     .from("tasks")
     .delete()
@@ -213,3 +213,4 @@ export async function deleteTask(id: string): Promise<boolean> {
     .eq("organization_id", organizationId);
   return !error;
 }
+

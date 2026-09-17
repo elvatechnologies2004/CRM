@@ -246,7 +246,7 @@ export interface DealCreateInput {
 
 export async function createDeal(input: DealCreateInput): Promise<DealRecord | null> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = getOrgIdOrThrow(await getActiveOrgId(supabase));
+  const organizationId = ensureOrgForWrite(supabase);
   const { data: userData } = await supabase.auth.getUser();
 
   // Resolve default pipeline + first open stage when not provided.
@@ -340,7 +340,7 @@ export interface DealUpdateInput {
 /** Update an existing deal. Returns the updated DealRecord, or null. */
 export async function updateDeal(input: DealUpdateInput): Promise<DealRecord | null> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = getOrgIdOrThrow(await getActiveOrgId(supabase));
+  const organizationId = ensureOrgForWrite(supabase);
 
   const patch: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
@@ -394,7 +394,7 @@ export async function updateDeal(input: DealUpdateInput): Promise<DealRecord | n
 
 export async function archiveDeal(id: string): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = getOrgIdOrThrow(await getActiveOrgId(supabase));
+  const organizationId = ensureOrgForWrite(supabase);
   const { error } = await supabase
     .from("deals")
     .update({ archived_at: new Date().toISOString() })
@@ -402,3 +402,4 @@ export async function archiveDeal(id: string): Promise<boolean> {
     .eq("organization_id", organizationId);
   return !error;
 }
+
