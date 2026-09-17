@@ -54,7 +54,7 @@ function QuotesPageClient({ initialQuotes }: QuotesPageClientProps) {
       status: data.status,
       currency: "USD",
       issue_date: data.issueDate,
-      expiry_date: data.expiryDate || null,
+      expiry_date: data.expiryDate || undefined,
       notes: data.notes,
     });
     setBusy(false);

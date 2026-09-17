@@ -367,8 +367,9 @@ export async function updateDeal(input: DealUpdateInput): Promise<DealRecord | n
     }
     patch.probability = probability;
     if (input.value !== undefined) {
+      const finalProbability = probability ?? 0;
       patch.value = input.value;
-      patch.expected_revenue = Math.round(input.value * probability) / 100;
+      patch.expected_revenue = Math.round(input.value * finalProbability) / 100;
     }
   }
   if (input.name !== undefined) patch.name = input.name;
