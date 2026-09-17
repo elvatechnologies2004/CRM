@@ -74,3 +74,19 @@ export function getOrgIdOrThrow(organizationId: string | null): string {
   }
   return organizationId;
 }
+
+/**
+ * Resolves the active org for a write, self-bootstrapping the user's
+ * workspace when none exists (idempotent). Sessions that skipped the
+ * onboard step otherwise hit "No active workspace" on the first write.
+ */
+export async function ensureOrgForWrite(supabase: DbClient): Promise<string> {
+  const existing = await getActiveOrgId(supabase);
+  if (existing) return existing;
+
+  const { ensureWorkspace } = await import("@/lib/crm/workspace");
+  await ensureWorkspace();
+
+  const { data } = await supabase.rpc("current_organization_id");
+  return getOrgIdOrThrow((data as string | null) ?? null);
+}

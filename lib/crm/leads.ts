@@ -1,6 +1,6 @@
 ﻿import "server-only";
 
-import { getActiveOrgId, toIso, buildFullName, uuidOrNull, fetchOwnerIndex, getOrgIdOrThrow, PAGE_SIZE } from "@/lib/crm/base";
+import { getActiveOrgId, toIso, buildFullName, uuidOrNull, fetchOwnerIndex, getOrgIdOrThrow, ensureOrgForWrite, PAGE_SIZE } from "@/lib/crm/base";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
 import { autoRouteLead, type RouterLead } from "@/lib/routing/routing";
