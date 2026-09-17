@@ -1,4 +1,4 @@
-import "server-only";
+﻿import "server-only";
 
 import {
   getActiveOrgId,
@@ -161,7 +161,7 @@ export interface ContactCreateInput {
 
 export async function createContact(input: ContactCreateInput): Promise<ContactRecord | null> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = getOrgIdOrThrow(await getActiveOrgId(supabase));
+  const organizationId = ensureOrgForWrite(supabase);
   const { data: userData } = await supabase.auth.getUser();
 
   const { data } = await supabase
@@ -203,7 +203,7 @@ export interface ContactUpdateInput extends Partial<ContactCreateInput> {
 
 export async function updateContact(input: ContactUpdateInput): Promise<ContactRecord | null> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = getOrgIdOrThrow(await getActiveOrgId(supabase));
+  const organizationId = ensureOrgForWrite(supabase);
 
   const patch: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
@@ -248,3 +248,5 @@ export async function updateContact(input: ContactUpdateInput): Promise<ContactR
   const owners = await fetchOwnerIndex(supabase, organizationId);
   return mapContactRow(data as unknown as ContactRow, owners);
 }
+
+
