@@ -84,8 +84,14 @@ export async function ensureOrgForWrite(supabase: DbClient): Promise<string> {
   const existing = await getActiveOrgId(supabase);
   if (existing) return existing;
 
-  const { ensureWorkspace } = await import("@/lib/crm/workspace");
-  await ensureWorkspace();
+  // Try to bootstrap the workspace; if it fails (e.g. slug collision),
+  // continue and try to resolve the org ID anyway.
+  try {
+    const { ensureWorkspace } = await import("@/lib/crm/workspace");
+    await ensureWorkspace();
+  } catch {
+    // ignore – the workspace may already exist under a different name
+  }
 
   const { data } = await supabase.rpc("current_organization_id");
   return getOrgIdOrThrow((data as string | null) ?? null);
