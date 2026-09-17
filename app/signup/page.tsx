@@ -4,7 +4,6 @@ import { BarChart3, List, Zap } from "lucide-react";
 
 import { AuthShell } from "@/components/auth/auth-shell";
 import { SignUpForm } from "@/components/auth/signup-form";
-import { isEmailDeliveryConfigured } from "@/lib/email/provider";
 
 export const metadata = { title: "Create account" };
 
@@ -15,25 +14,11 @@ const FEATURES = [
 ];
 
 export default async function SignUpPage() {
-  const emailConfigured = isEmailDeliveryConfigured();
   return (
     <AuthShell
       variant="split"
       title="Create your workspace"
       description="Start managing leads, deals, and revenue in one place."
-      asideAction={
-        <div className="flex items-center gap-[14px]">
-          <span className="hidden text-[14px] font-medium text-white sm:inline">
-            Have an account?
-          </span>
-          <Link
-            href="/login"
-            className="inline-flex items-center rounded-full border border-white/90 bg-white/15 px-[22px] py-[9px] text-[14px] font-medium text-white backdrop-blur-[10px] transition-colors hover:bg-white/30"
-          >
-            Sign In
-          </Link>
-        </div>
-      }
       branding={
         <div className="flex flex-col">
           {/* Headline — dark navy + blue accent, matches sign-in hero */}
@@ -72,11 +57,6 @@ export default async function SignUpPage() {
           <Link href="/login" className="font-semibold text-[#4a72e0] hover:underline">
             Sign In
           </Link>
-          {!emailConfigured && (
-            <span className="mt-3 block text-xs text-muted-foreground">
-              Email verification and transactional mail are disabled until a provider is configured.
-            </span>
-          )}
         </p>
       }
     >

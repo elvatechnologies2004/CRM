@@ -99,22 +99,7 @@ export function AuthShell({
     );
   }
 
-  // Split layout — login only, matching the FinloNexa reference (icon bar = FinloNexa logo,
-  // 3 bars with low/mid/high heights, #4a72e0).
-  const logoMark = (
-    <svg
-      width="34"
-      height="34"
-      viewBox="0 0 34 34"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden
-    >
-      <rect x="2" y="17" width="7" height="15" rx="1.8" fill="#4a72e0" opacity="0.65" />
-      <rect x="13" y="10" width="7" height="22" rx="1.8" fill="#4a72e0" opacity="0.82" />
-      <rect x="24" y="3" width="7" height="29" rx="1.8" fill="#4a72e0" />
-    </svg>
-  );
-
+  // Split layout — login only, matching the FinloNexa reference.
   return (
     <div className="relative flex min-h-svh w-full flex-col overflow-hidden">
       {/* Sign-in scenic background — signin-bg.png */}
@@ -130,24 +115,8 @@ export function AuthShell({
 
       {/* Foreground content */}
       <div className="relative z-10 flex min-h-svh flex-col">
-        {/* Top nav — logo left, asideAction right */}
-        <nav className="flex w-full items-center justify-between px-5 py-[22px] sm:px-11">
-          <div className="flex items-center gap-[11px]">
-            {logoMark}
-            <div>
-              <div className="text-[19px] font-extrabold leading-none tracking-[-0.2px] text-[#0c1f3d]">
-                FinloNexa
-              </div>
-              <div className="mt-[1px] text-[11px] font-semibold tracking-[1.5px] text-[#2e4a7a]">
-                CRM
-              </div>
-            </div>
-          </div>
-          {asideAction}
-        </nav>
-
         {/* Body — hero left, glass card right (stacks below lg) */}
-        <div className="flex flex-1 flex-col items-center gap-10 px-5 pb-11 pt-[10px] lg:flex-row lg:px-11">
+        <div className="flex flex-1 flex-col items-center justify-center gap-10 px-5 py-10 lg:flex-row lg:justify-normal lg:px-11">
           {branding ? (
             <div className="w-full flex-1 lg:pl-[5%] lg:pr-[60px]">{branding}</div>
           ) : null}
@@ -155,14 +124,14 @@ export function AuthShell({
           {/* Right — frosted login card */}
           <div
             className={cn(
-              "mx-auto w-full max-w-[452px] shrink-0",
+              "mx-auto w-full max-w-[452px] shrink-0 lg:-translate-x-[15%]",
               className
             )}
           >
-            <div className="group relative overflow-hidden rounded-[24px] border border-white/70 bg-white/60 px-[42px] pb-[34px] pt-[42px] shadow-[0_24px_64px_rgba(0,20,60,0.2),0_4px_16px_rgba(0,0,0,0.07),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-[24px] backdrop-saturate-[1.4]">
+            <div className="group relative overflow-hidden rounded-[24px] border border-white/70 bg-white/60 px-[42px] pb-[26px] pt-[30px] shadow-[0_24px_64px_rgba(0,20,60,0.2),0_4px_16px_rgba(0,0,0,0.07),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-[24px] backdrop-saturate-[1.4]">
               <div className="relative">
-                <div className="mb-[30px] text-center">
-                  <h2 className="mb-[7px] text-[25px] font-extrabold tracking-[-0.3px] text-[#0c1f3d]">
+                <div className="mb-[22px] text-center">
+                  <h2 className="mb-[6px] text-[25px] font-extrabold tracking-[-0.3px] text-[#0c1f3d]">
                     {title}
                   </h2>
                   {description ? (
@@ -172,8 +141,23 @@ export function AuthShell({
                 {children}
                 {/* Auth links INSIDE the card — never floating below it */}
                 {footer ? (
-                  <div className="mt-[22px] text-center text-[13px] text-[#6879a0]">{footer}</div>
+                  <div className="mt-[18px] text-center text-[13px] text-[#6879a0]">{footer}</div>
                 ) : null}
+                <p className="mt-[20px] border-t border-[#d5dff0]/60 pt-[16px] text-center text-[11px] font-medium uppercase tracking-[0.18em] text-[#6879a0]">
+                  A product by
+                  <span className="mt-[6px] flex justify-center">
+                    <Image
+                      src="/elva-logo.png"
+                      alt="ELVA"
+                      width={145}
+                      height={58}
+                      sizes="145px"
+                      quality={100}
+                      priority
+                      className="object-contain"
+                    />
+                  </span>
+                </p>
               </div>
             </div>
           </div>

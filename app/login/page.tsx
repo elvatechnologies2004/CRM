@@ -27,19 +27,6 @@ export default async function LoginPage({
       variant="split"
       title="Welcome Back"
       description="Sign in to your FinloNexa CRM account"
-      asideAction={
-        <div className="flex items-center gap-[14px]">
-          <span className="hidden text-[14px] font-medium text-white sm:inline">
-            New here?
-          </span>
-          <Link
-            href="/signup"
-            className="inline-flex items-center rounded-full border border-white/90 bg-white/15 px-[22px] py-[9px] text-[14px] font-medium text-white backdrop-blur-[10px] transition-colors hover:bg-white/30"
-          >
-            Create Account
-          </Link>
-        </div>
-      }
       branding={
         <div className="flex flex-col">
           {/* Headline — dark navy + blue accent, matches reference hero */}

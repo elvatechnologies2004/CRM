@@ -174,7 +174,7 @@ export function LoginForm({ next = "/dashboard" }: { next?: string }) {
             setLoading(false);
           }
         }}
-        className="h-[48px] w-full rounded-[9px] border border-[#d5dff0] bg-white/92 text-[15px] font-bold text-[#0c1f3d] shadow-sm transition-colors hover:bg-white disabled:opacity-60"
+        className="h-[48px] w-full rounded-[9px] border border-white/70 bg-white/40 text-[15px] font-bold text-[#0c1f3d] shadow-[0_8px_20px_rgba(0,20,60,0.12),inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-[20px] backdrop-saturate-[1.4] transition-colors hover:bg-white/60 disabled:opacity-60"
         disabled={loading}
       >
         <svg className="mr-2 h-[18px] w-[18px]" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden>
