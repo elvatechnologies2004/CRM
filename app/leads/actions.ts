@@ -184,6 +184,7 @@ export async function deleteLeadAction(leadId: string) {
   }
   revalidatePath("/leads");
   revalidatePath(`/leads/${leadId}`);
+  revalidatePath("/dashboard");
   return { ok: true, deletedId: leadId };
 }
 
@@ -196,6 +197,7 @@ export async function archiveLeadAction(leadId: string) {
   const { error } = await client.from("leads").update({ archived_at: new Date().toISOString(), archived_by: user.id }).eq("id", leadId).eq("organization_id", orgId);
   revalidatePath("/leads");
   revalidatePath(`/leads/${leadId}`);
+  revalidatePath("/dashboard");
   return { ok: !error, error: error?.message };
 }
 
@@ -208,6 +210,7 @@ export async function restoreLeadAction(leadId: string) {
   const { error } = await client.from("leads").update({ archived_at: null, archived_by: null }).eq("id", leadId).eq("organization_id", orgId);
   revalidatePath("/leads");
   revalidatePath(`/leads/${leadId}`);
+  revalidatePath("/dashboard");
   return { ok: !error, error: error?.message };
 }
 

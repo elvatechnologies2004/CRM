@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getActiveOrgId, toIso } from "@/lib/crm/base";
+import { formatTimeUTC } from "@/lib/date-utils";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
 import type {
@@ -62,15 +63,16 @@ export async function getDashboardData(): Promise<DashboardData | null> {
         .limit(5),
       supabase
         .from("tasks")
-        .select("id, title, priority, due_at, status")
+        .select("id, title, priority, due_at, status, related_type, related_id")
         .eq("organization_id", organizationId)
         .in("status", ["Open", "In Progress"])
         .order("due_at", { ascending: true, nullsFirst: false })
         .limit(6),
       supabase
         .from("meetings")
-        .select("id, title, start_at, meeting_url")
+        .select("id, title, start_at, meeting_url, status, related_type, related_id")
         .eq("organization_id", organizationId)
+        .in("status", ["scheduled", "in_progress", "rescheduled"])
         .gte("start_at", startOfToday())
         .lt("start_at", startOfTomorrow())
         .order("start_at", { ascending: true })
@@ -137,7 +139,19 @@ export async function getDashboardData(): Promise<DashboardData | null> {
     email: l.email ?? undefined,
   }));
 
-  const upcomingTasks: Task[] = (tasksRes.data ?? []).map((t) => ({
+  const taskRows = await filterValidTaskRows(
+    supabase,
+    organizationId,
+    (tasksRes.data ?? []) as DashboardTaskRow[],
+  );
+  const meetingRows = await filterValidRelatedRows(
+    supabase,
+    organizationId,
+    (meetingsRes.data ?? []) as DashboardMeetingRow[],
+    ["lead", "deal"],
+  );
+
+  const upcomingTasks: Task[] = taskRows.map((t) => ({
     id: t.id,
     title: t.title,
     time: t.due_at ? toIso(t.due_at) : "",
@@ -146,10 +160,10 @@ export async function getDashboardData(): Promise<DashboardData | null> {
     completed: t.status === "Completed",
   }));
 
-  const todayMeetings: Meeting[] = (meetingsRes.data ?? []).map((m) => ({
+  const todayMeetings: Meeting[] = meetingRows.map((m) => ({
     id: m.id,
     title: m.title,
-    time: m.start_at ? toIso(m.start_at) : "",
+    time: m.start_at ? formatTimeUTC(m.start_at) : "",
     company: "",
     type: m.meeting_url ? "video" : "call",
   }));
@@ -163,6 +177,107 @@ export async function getDashboardData(): Promise<DashboardData | null> {
   }));
 
   return { kpi, revenue, dealsByStage, recentLeads, upcomingTasks, todayMeetings, dealRisks };
+}
+
+interface DashboardTaskRow {
+  id: string;
+  title: string;
+  priority: string | null;
+  due_at: string | null;
+  status: string;
+  related_type: string | null;
+  related_id: string | null;
+}
+
+interface DashboardMeetingRow {
+  id: string;
+  title: string;
+  start_at: string;
+  meeting_url: string | null;
+  status: string | null;
+  related_type: string | null;
+  related_id: string | null;
+}
+
+export type DashboardParentType = "lead" | "deal" | "contact" | "company";
+
+async function filterValidTaskRows(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  organizationId: string,
+  rows: DashboardTaskRow[],
+): Promise<DashboardTaskRow[]> {
+  return filterValidRelatedRows(supabase, organizationId, rows, ["lead", "deal", "contact", "company"] satisfies DashboardParentType[]);
+}
+
+export async function filterValidRelatedRows<T extends { related_type: string | null; related_id: string | null }>(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  organizationId: string,
+  rows: T[],
+  allowedTypes: DashboardParentType[],
+): Promise<T[]> {
+  const idsByType: Record<DashboardParentType, string[]> = {
+    lead: [],
+    deal: [],
+    contact: [],
+    company: [],
+  };
+
+  for (const row of rows) {
+    const type = normalizeTaskParentType(row.related_type);
+    if (type && allowedTypes.includes(type) && row.related_id) idsByType[type].push(row.related_id);
+  }
+
+  const validParentKeys = new Set<string>();
+  const tableByType: Record<DashboardParentType, string> = {
+    lead: "leads",
+    deal: "deals",
+    contact: "contacts",
+    company: "companies",
+  };
+
+  await Promise.all(
+    (Object.entries(idsByType) as Array<[DashboardParentType, string[]]>).map(
+      async ([type, ids]) => {
+        const uniqueIds = [...new Set(ids)];
+        if (!uniqueIds.length) return;
+
+        const { data, error } = await supabase
+          .from(tableByType[type])
+          .select("id")
+          .eq("organization_id", organizationId)
+          .is("archived_at", null)
+          .in("id", uniqueIds);
+
+        if (error) {
+          console.error(`[dashboard] ${type} task parent lookup failed`, error.message);
+          return;
+        }
+
+        for (const parent of data ?? []) {
+          validParentKeys.add(`${type}:${parent.id}`);
+        }
+      },
+    ),
+  );
+
+  return rows.filter((row) => {
+    const type = normalizeTaskParentType(row.related_type);
+    return Boolean(
+      type &&
+        allowedTypes.includes(type) &&
+        row.related_id &&
+        validParentKeys.has(`${type}:${row.related_id}`),
+    );
+  });
+}
+
+function normalizeTaskParentType(value: string | null): DashboardParentType | null {
+  const type = value?.toLowerCase();
+  if (type === "lead") return "lead";
+  if (type === "deal" || type === "opportunity") return "deal";
+  if (type === "contact") return "contact";
+  if (type === "company") return "company";
+  return null;
 }
 
 function startOfToday(): string {

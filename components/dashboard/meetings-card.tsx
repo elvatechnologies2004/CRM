@@ -45,8 +45,11 @@ function MeetingsCard({ meetings, leadHrefs }: MeetingsCardProps) {
         </Link>
       </CardHeader>
       <CardContent className="pt-1">
-        <ul className="flex flex-col divide-y divide-border/60">
-          {meetings.map((meeting) => {
+        {meetings.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">No meetings today</p>
+        ) : (
+          <ul className="flex flex-col divide-y divide-border/60">
+            {meetings.map((meeting) => {
             const href = leadHrefs?.[meeting.company.toLowerCase()];
             const rowClass = "flex items-center gap-3 rounded-lg py-3 transition-colors";
             return (
@@ -66,8 +69,9 @@ function MeetingsCard({ meetings, leadHrefs }: MeetingsCardProps) {
                 )}
               </li>
             );
-          })}
-        </ul>
+            })}
+          </ul>
+        )}
       </CardContent>
     </Card>
   );

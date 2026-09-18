@@ -37,14 +37,18 @@ interface UpcomingTasksProps {
 }
 
 function UpcomingTasks({ tasks }: UpcomingTasksProps) {
-  const [items, setItems] = React.useState(tasks);
+  const [completedIds, setCompletedIds] = React.useState<Set<string>>(new Set());
+  const items = tasks.map((task) =>
+    completedIds.has(task.id) ? { ...task, completed: true } : task,
+  );
 
   const toggle = (id: string) => {
-    setItems((prev) =>
-      prev.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task
-      )
-    );
+    setCompletedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
   return (
@@ -61,8 +65,11 @@ function UpcomingTasks({ tasks }: UpcomingTasksProps) {
         </Link>
       </CardHeader>
       <CardContent className="pt-1">
-        <ul className="flex flex-col">
-          {items.map((task) => {
+        {items.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">No upcoming tasks</p>
+        ) : (
+          <ul className="flex flex-col">
+            {items.map((task) => {
             const Icon = taskIcon(task.title);
             const priorityBadge = priorityStyles[task.priority];
             return (
@@ -109,8 +116,9 @@ function UpcomingTasks({ tasks }: UpcomingTasksProps) {
                 </Badge>
               </li>
             );
-          })}
-        </ul>
+            })}
+          </ul>
+        )}
       </CardContent>
     </Card>
   );

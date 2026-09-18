@@ -1,5 +1,6 @@
 import "server-only";
 
+import { filterValidRelatedRows, type DashboardParentType } from "@/lib/crm/dashboard";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export interface ActivationMilestone {
@@ -11,27 +12,19 @@ export interface ActivationMilestone {
 
 export interface ActivationResult {
   milestones: ActivationMilestone[];
-  score: number; // 0–100
+  score: number;
   doneCount: number;
   totalCount: number;
 }
 
 const MILESTONES = [
-  { key: "organization", label: "Organization created", table: "organizations", href: "/settings" },
-  { key: "lead", label: "First lead created", table: "leads", href: "/leads" },
-  { key: "contact", label: "First contact added", table: "contacts", href: "/contacts" },
-  { key: "company", label: "First company added", table: "companies", href: "/companies" },
-  { key: "deal", label: "First deal created", table: "deals", href: "/pipeline" },
-  { key: "pipeline_activity", label: "First pipeline activity", table: "activities", href: "/pipeline" },
-  { key: "task", label: "First task created", table: "tasks", href: "/tasks" },
-  { key: "automation", label: "First automation built", table: "automations", href: "/automations" },
-  { key: "team", label: "Team member invited", table: "organization_invites", href: "/settings" },
+  { key: "organization", label: "Organization created", href: "/settings" },
+  { key: "lead", label: "First lead created", href: "/leads" },
+  { key: "opportunity", label: "First opportunity created", href: "/opportunities" },
+  { key: "task", label: "First task created", href: "/tasks" },
+  { key: "team", label: "Team member invited", href: "/settings" },
 ] as const;
 
-/**
- * Compute onboarding activation (Steps 98.2/98.3).
- * Simple, deterministic milestone counting — no AI.
- */
 export async function getActivation(): Promise<ActivationResult | null> {
   const supabase = await createSupabaseServerClient();
   const {
@@ -47,53 +40,71 @@ export async function getActivation(): Promise<ActivationResult | null> {
     .maybeSingle();
   if (!membership) return null;
 
-  const orgId = membership.organization_id as string;
+  const organizationId = membership.organization_id as string;
+  const { data: organization } = await supabase
+    .from("organizations")
+    .select("id")
+    .eq("id", organizationId)
+    .maybeSingle();
+  if (!organization) return null;
 
-  // Org exists = always done (we fetched it already).
-  const checks: Record<string, boolean> = { organization: true };
+  const [{ count: leads }, { count: opportunities }, { data: taskRows }] = await Promise.all([
+    supabase
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organizationId)
+      .is("archived_at", null),
+    supabase
+      .from("deals")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organizationId)
+      .is("archived_at", null),
+    supabase
+      .from("tasks")
+      .select("id, related_type, related_id, status")
+      .eq("organization_id", organizationId)
+      .neq("status", "Cancelled"),
+  ]);
 
-  // Count rows per milestone table.
-  const tableMap: Record<string, string> = {
-    lead: "leads",
-    contact: "contacts",
-    company: "companies",
-    deal: "deals",
-    pipeline_activity: "activities",
-    task: "tasks",
-    automation: "automations",
-  };
-
-  await Promise.all(
-    Object.entries(tableMap).map(async ([key, table]) => {
-      const { count } = await supabase
-        .from(table as "leads")
-        .select("id", { count: "exact", head: true })
-        .eq("organization_id", orgId);
-      checks[key] = (count ?? 0) > 0;
-    }),
+  const validTasks = await filterValidRelatedRows(
+    supabase,
+    organizationId,
+    (taskRows ?? []) as Array<{
+      id: string;
+      related_type: string | null;
+      related_id: string | null;
+      status: string;
+    }>,
+    ["lead", "deal", "contact", "company"] satisfies DashboardParentType[],
   );
 
-  // Team invited: any invite OR more than one active member.
-  const { count: invites } = await supabase
-    .from("organization_invites")
-    .select("id", { count: "exact", head: true })
-    .eq("organization_id", orgId)
-    .not("status", "eq", "revoked");
-  const { count: members } = await supabase
-    .from("organization_members")
-    .select("id", { count: "exact", head: true })
-    .eq("organization_id", orgId)
-    .eq("status", "active");
-  checks.team = (invites ?? 0) > 0 || (members ?? 0) > 1;
+  const [{ count: invites }, { count: members }] = await Promise.all([
+    supabase
+      .from("organization_invites")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organizationId)
+      .in("status", ["pending", "accepted"]),
+    supabase
+      .from("organization_members")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organizationId)
+      .eq("status", "active"),
+  ]);
 
-  const milestones: ActivationMilestone[] = MILESTONES.map((m) => ({
-    key: m.key,
-    label: m.label,
-    done: Boolean(checks[m.key]),
-    href: m.href,
+  const checks: Record<string, boolean> = {
+    organization: true,
+    lead: (leads ?? 0) > 0,
+    opportunity: (opportunities ?? 0) > 0,
+    task: validTasks.length > 0,
+    team: (invites ?? 0) > 0 || (members ?? 0) > 1,
+  };
+
+  const milestones: ActivationMilestone[] = MILESTONES.map((milestone) => ({
+    ...milestone,
+    done: checks[milestone.key] === true,
   }));
+  const doneCount = milestones.filter((milestone) => milestone.done).length;
 
-  const doneCount = milestones.filter((m) => m.done).length;
   return {
     milestones,
     score: Math.round((doneCount / milestones.length) * 100),

@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 
 import { getActiveOrgId } from "@/lib/crm/base";
-import { getDealById } from "@/lib/crm/deals";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function toIsoDateTime(date: string, time: string) {
@@ -1086,12 +1085,14 @@ export async function manageOpportunityAction(dealId: string, action: "delete" |
     const { error } = await supabase.from("deals").update({ archived_at: null, archived_by: null }).eq("id", dealId).eq("organization_id", orgId);
     revalidatePath("/opportunities");
     revalidatePath(`/opportunities/${dealId}`);
+    revalidatePath("/dashboard");
     return { ok: !error, error: error?.message };
   }
   if (action === "archive") {
     const { error } = await supabase.from("deals").update({ archived_at: new Date().toISOString(), archived_by: user.id }).eq("id", dealId).eq("organization_id", orgId);
     revalidatePath("/opportunities");
     revalidatePath(`/opportunities/${dealId}`);
+    revalidatePath("/dashboard");
     return { ok: !error, error: error?.message };
   }
   if (closed) return { ok: false, error: "Closed opportunities can only be archived." };
@@ -1120,5 +1121,6 @@ export async function manageOpportunityAction(dealId: string, action: "delete" |
   }
   revalidatePath("/opportunities");
   revalidatePath(`/opportunities/${dealId}`);
+  revalidatePath("/dashboard");
   return { ok: true };
 }
