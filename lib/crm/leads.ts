@@ -16,6 +16,7 @@ export interface LeadQuery {
   pageSize?: number;
   sortBy?: string;
   sortDir?: "asc" | "desc";
+  archiveFilter?: "active" | "archived" | "all";
 }
 
 export interface LeadListResult {
@@ -54,6 +55,7 @@ interface LeadRow {
   company_size: string | null;
   account_type: string | null;
   territory_id: string | null;
+  archived_at: string | null;
 }
 
 export function mapLeadRow(row: LeadRow, owners: Record<string, { name: string }>): LeadRecord {
@@ -87,6 +89,7 @@ export function mapLeadRow(row: LeadRow, owners: Record<string, { name: string }
     lastActivityAt: toIso(row.last_activity_at ?? row.created_at),
     nextFollowUpAt: row.next_follow_up_at ? toIso(row.next_follow_up_at) : undefined,
     convertedDealId: uuidOrNull(row.converted_deal_id),
+    archivedAt: row.archived_at ?? undefined,
     qualification: {
       budget: (row.budget as LeadQualification["budget"]) ?? "Estimated",
       authority: "Unknown",
@@ -118,8 +121,10 @@ export async function getLeads(query: LeadQuery = {}): Promise<LeadListResult> {
     .from("leads")
     .select("*", { count: "exact" })
     .eq("organization_id", organizationId)
-    .is("archived_at", null)
     .range(from, to);
+
+  if (query.archiveFilter !== "all" && query.archiveFilter !== "archived") b = b.is("archived_at", null);
+  if (query.archiveFilter === "archived") b = b.not("archived_at", "is", null);
 
   if (query.search) {
     const like = `%${query.search}%`;
@@ -373,13 +378,14 @@ export async function deleteLead(id: string): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
   const organizationId = await ensureOrgForWrite(supabase);
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("leads")
     .delete()
     .eq("id", id)
-    .eq("organization_id", organizationId);
+    .eq("organization_id", organizationId)
+    .select("id");
 
-  return !error;
+  return !error && Boolean(data?.length);
 }
 
 /** Convert a lead to a deal via the transactional RPC (Steps 52/57). */

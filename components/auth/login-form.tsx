@@ -40,10 +40,10 @@ export function LoginForm({ next = "/dashboard" }: { next?: string }) {
         return;
       }
 
-      // Bootstrap workspace (idempotent) then continue.
-      await fetch("/api/auth/onboard", { method: "POST" }).catch(() => {});
+      // Bootstrap workspace in the background; the signed-in session is already
+      // valid and navigation should not block on a second server round-trip.
+      void fetch("/api/auth/onboard", { method: "POST", cache: "no-store" }).catch(() => {});
       router.replace(next);
-      router.refresh();
     } finally {
       setLoading(false);
     }

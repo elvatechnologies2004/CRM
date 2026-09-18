@@ -1,28 +1,9 @@
-import { redirect } from "next/navigation";
-
-import { DealsPageClient } from "@/components/deals/deals-page-client";
-import { getActiveOrgId, fetchOwnerIndex } from "@/lib/crm/base";
 import { getDeals } from "@/lib/crm/deals";
-import { isSupabaseConfigured } from "@/lib/env";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { dealMocks } from "@/lib/mock-deals";
-import { leadOwners } from "@/lib/mock-leads";
+import { OpportunitiesPageClient } from "@/components/opportunities/opportunities-page-client";
 
-export default async function OpportunitiesPage() {
-  const result = await getDeals();
-  let initialDeals = result.rows;
-  let owners: string[] = leadOwners.map((o) => o.name);
-
-  if (initialDeals.length > 0 && isSupabaseConfigured()) {
-    const supabase = await createSupabaseServerClient();
-    const organizationId = await getActiveOrgId(supabase);
-    if (organizationId) {
-      const index = await fetchOwnerIndex(supabase, organizationId);
-      owners = Object.values(index).map(({ name }) => name);
-    }
-  }
-
-  if (initialDeals.length === 0) initialDeals = dealMocks;
-
-  return <DealsPageClient initialDeals={initialDeals} owners={owners} />;
+export default async function OpportunitiesPage({ searchParams }: { searchParams: Promise<{ archive?: string }> }) {
+  const params = await searchParams;
+  const archiveFilter = params.archive === "archived" || params.archive === "all" ? params.archive : "active";
+  const result = await getDeals({ pageSize: 1000, archiveFilter });
+  return <OpportunitiesPageClient initialDeals={result.rows} archiveFilter={archiveFilter} />;
 }

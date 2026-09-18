@@ -311,6 +311,7 @@ export interface LeadRecord {
   lastActivityAt: string;
   nextFollowUpAt?: string;
   convertedDealId?: string;
+  archivedAt?: string;
   qualification: LeadQualification;
 }
 
@@ -711,6 +712,7 @@ export interface DealRecord {
   winReason?: DealWinReason;
   lostReason?: DealLostReason;
   competitor?: string;
+  archivedAt?: string;
 }
 
 export interface PipelineStage {

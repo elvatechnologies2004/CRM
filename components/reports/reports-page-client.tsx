@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ExportDataDialog } from "@/components/exports/export-data-dialog";
 import type { ReportData, ReportType } from "@/lib/types";
 
 interface ReportsPageClientProps {
@@ -12,6 +13,7 @@ interface ReportsPageClientProps {
 
 function ReportsPageClient({ initialReports }: ReportsPageClientProps) {
   const reports = useMemo(() => initialReports, [initialReports]);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const typeTone: Record<ReportType, "info" | "success" | "warning" | "danger"> = {
     "Win Loss": "info",
@@ -25,10 +27,17 @@ function ReportsPageClient({ initialReports }: ReportsPageClientProps) {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold tracking-tight text-ink">Reports</h1>
-        <Button size="sm" variant="ghost">
-          + New Report
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="ghost">
+            + New Report
+          </Button>
+          <Button size="sm" onClick={() => setExportOpen(true)}>
+            Export Data
+          </Button>
+        </div>
       </div>
+
+      <ExportDataDialog open={exportOpen} onOpenChange={setExportOpen} defaultScope="sales_report" title="FinloNexa Data Export" />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {reports.map((report) => {

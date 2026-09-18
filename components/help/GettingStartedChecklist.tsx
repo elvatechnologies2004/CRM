@@ -5,9 +5,9 @@ import Link from "next/link";
 import { CheckSquare } from "lucide-react";
 
 const checklist = [
-  { label: "Create your first lead", href: "/leads" },
-  { label: "Convert a lead into a deal", href: "/deals" },
-  { label: "Set up your pipeline stages", href: "/pipeline" },
+  { label: "Create your first contact", href: "/contacts" },
+  { label: "Add your first company", href: "/companies" },
+  { label: "Review the pipeline", href: "/pipeline" },
   { label: "Invite your team to the CRM", href: "/settings" },
   { label: "Connect your email (Gmail or Outlook)", href: "/integrations" },
   { label: "Create your first automation", href: "/automations" },

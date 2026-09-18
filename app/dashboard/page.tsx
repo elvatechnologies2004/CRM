@@ -18,15 +18,7 @@ import { getDashboardData } from "@/lib/crm/dashboard";
 import { getActivation } from "@/lib/onboarding";
 import { TrialBanner } from "@/components/onboarding/trial-banner";
 import { ActivationCard } from "@/components/onboarding/activation-card";
-import {
-  dealRisks,
-  kpiStats,
-  recentLeads,
-  teamPerformance,
-  todayMeetings,
-  upcomingTasks,
-} from "@/lib/mock-data";
-import { leadMocks } from "@/lib/mock-leads";
+import { teamPerformance } from "@/lib/mock-data";
 
 const DealsStageChart = dynamic(
   () => import("@/components/charts/deals-stage-chart").then((mod) => mod.DealsStageChart),
@@ -65,35 +57,43 @@ const kpiIcons = [
 
 export const revalidate = 3;
 
-const leadHrefByCompany: Record<string, string> = {};
-const leadHrefByName: Record<string, string> = {};
-for (const lead of leadMocks) {
-  leadHrefByCompany[lead.companyName.toLowerCase()] = `/leads/${lead.id}`;
-  leadHrefByName[`${lead.firstName} ${lead.lastName}`.toLowerCase()] = `/leads/${lead.id}`;
-}
+const emptyDashboard = {
+  kpi: [
+    { id: "total-leads", label: "Total Leads", value: "0", change: "", comparison: "all time" },
+    { id: "active-deals", label: "Active Deals", value: "0", change: "", comparison: "open" },
+    { id: "expected-revenue", label: "Expected Revenue", value: "Rs 0", change: "", comparison: "weighted" },
+    { id: "won-deals", label: "Won Deals", value: "0", change: "", comparison: "this month" },
+  ],
+  revenue: [],
+  dealsByStage: [],
+  recentLeads: [],
+  upcomingTasks: [],
+  todayMeetings: [],
+  dealRisks: [],
+};
 
 export default async function DashboardPage() {
-  const dashboard = await getDashboardData();
-  const kpi = dashboard?.kpi ?? kpiStats;
+  const dashboard = (await getDashboardData()) ?? emptyDashboard;
   const activation = await getActivation();
-  const stageData = dashboard?.dealsByStage;
-  const revenueData = dashboard?.revenue;
-  const leads = dashboard ? dashboard.recentLeads : recentLeads;
-  const tasks = dashboard ? dashboard.upcomingTasks : upcomingTasks;
-  const meetings = dashboard ? dashboard.todayMeetings : todayMeetings;
-  const risks = dashboard ? dashboard.dealRisks : dealRisks;
+  const kpi = dashboard.kpi;
+  const stageData = dashboard.dealsByStage;
+  const revenueData = dashboard.revenue;
+  const leads = dashboard.recentLeads;
+  const tasks = dashboard.upcomingTasks;
+  const meetings = dashboard.todayMeetings;
+  const risks = dashboard.dealRisks;
 
-  const realLeadHrefByName = (dashboard?.recentLeads ?? []).reduce<Record<string, string>>((acc, lead) => {
+  const realLeadHrefByName = dashboard.recentLeads.reduce<Record<string, string>>((acc, lead) => {
     acc[lead.name.toLowerCase()] = `/leads/${lead.id}`;
     if (lead.company) acc[lead.company.toLowerCase()] = `/leads/${lead.id}`;
     return acc;
   }, {});
-  const realLeadHrefByCompany = (dashboard?.recentLeads ?? []).reduce<Record<string, string>>((acc, lead) => {
+  const realLeadHrefByCompany = dashboard.recentLeads.reduce<Record<string, string>>((acc, lead) => {
     if (lead.company) acc[lead.company.toLowerCase()] = `/leads/${lead.id}`;
     return acc;
   }, {});
-  const resolvedHrefsByName = Object.keys(realLeadHrefByName).length > 0 ? realLeadHrefByName : leadHrefByName;
-  const resolvedHrefsByCompany = Object.keys(realLeadHrefByCompany).length > 0 ? realLeadHrefByCompany : leadHrefByCompany;
+  const resolvedHrefsByName = realLeadHrefByName;
+  const resolvedHrefsByCompany = realLeadHrefByCompany;
 
   return (
     <div className="mx-auto flex max-w-[1600px] flex-col gap-5 pb-10">

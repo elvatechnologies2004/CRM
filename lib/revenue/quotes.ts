@@ -230,20 +230,8 @@ export async function updateQuoteStatus(params: UpdateQuoteStatusParams) {
     updated_at: new Date().toISOString(),
   };
 
-  if (params.status === "Sent") {
-    update.sent_at = new Date().toISOString();
-  }
-  if (params.status === "Viewed") {
-    update.viewed_at = new Date().toISOString();
-  }
-  if (params.status === "Accepted") {
-    update.accepted_at = new Date().toISOString();
-    update.accepted_by = user.id;
-    update.accepted_by_name = user.user_metadata?.full_name || user.email;
-  }
-  if (params.status === "Rejected") {
-    update.rejected_at = new Date().toISOString();
-  }
+  // The live schema only includes status + timestamps that already exist on quotes.
+  // Avoid writing to non-existent fields like accepted_at/rejected_at/sent_at/viewed_at.
 
   const { data: quote, error } = await supabase
     .from("quotes")

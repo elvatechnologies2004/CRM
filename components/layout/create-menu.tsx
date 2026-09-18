@@ -2,14 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import {
-  Building2,
-  ContactRound,
-  FileType,
-  Handshake,
-  Plus,
-  UserPlus,
-} from "lucide-react";
+import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -22,13 +15,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const createOptions = [
-  { label: "New Lead", href: "/leads", icon: UserPlus, shortcut: "L" },
-  { label: "New Contact", href: "/contacts", icon: ContactRound, shortcut: "C" },
-  { label: "New Company", href: "/companies", icon: Building2, shortcut: "⇧C" },
-  { label: "New Opportunity", href: "/opportunities", icon: Handshake, shortcut: "D" },
-  { label: "New Task", href: "/tasks", icon: FileType, shortcut: "T" },
-  { label: "New Quote", href: "/quotes", icon: FileType, shortcut: "Q" },
+const createOptions: Array<{ label: string; href: string; icon: typeof Plus; shortcut: string }> = [
+  { label: "New Dashboard Item", href: "/dashboard", icon: Plus, shortcut: "D" },
 ];
 
 function CreateMenu() {

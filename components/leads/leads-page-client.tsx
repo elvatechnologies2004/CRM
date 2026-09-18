@@ -1,802 +1,373 @@
 "use client";
 
-import * as React from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Filter, Search, Plus, ArrowRight, Kanban as KanbanIcon, TableProperties } from "lucide-react";
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { AddLeadDialog, type AddLeadFormState } from "@/components/leads/add-lead-dialog";
+import { ExportDataDialog } from "@/components/exports/export-data-dialog";
+import { RecordManagementMenu } from "@/components/crm/record-management-menu";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { LeadsHeader } from "@/components/leads/leads-header";
-import { LeadsStats } from "@/components/leads/leads-stats";
-import { LeadsFilters, defaultLeadFilters, type LeadFilterState, type ViewMode } from "@/components/leads/leads-filters";
-import { LeadsTable } from "@/components/leads/leads-table";
-import { LeadKanban } from "@/components/leads/lead-kanban";
-import { AddLeadDialog } from "@/components/leads/add-lead-dialog";
-import { ConvertLeadDialog } from "@/components/leads/convert-lead-dialog";
-import { AddTaskDialog, type NewTaskData } from "@/components/leads/add-task-dialog";
-import { ImportLeadDialog } from "@/components/leads/import-lead-dialog";
-import { UnqualifiedReasonDialog } from "@/components/leads/unqualified-reason-dialog";
-import { QualifyLeadDialog, type QualificationFormValues } from "@/components/leads/qualify-lead-dialog";
-import { LeadApprovalDialog } from "@/components/leads/lead-approval-dialog";
-import { fullName } from "@/components/leads/lead-row";
-import {
-  convertLeadAction,
-  createLeadAction,
-  deleteLeadAction,
-  updateLeadAction,
-  updateLeadStatusAction,
-} from "@/app/leads/actions";
-import type { LeadFormData } from "@/lib/lead-form";
-import {
-  markLeadDeleted,
-  readConvertedDeals,
-  readDeletedLeadIds,
-  readLeadStatusOverrides,
-  writeConvertedDeal,
-  writeLeadStatusOverride,
-  writePersistedTask,
-} from "@/lib/lead-local";
-import type { LeadRecord, LeadStatus, LeadTask, User } from "@/lib/types";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { createLeadAction } from "@/app/leads/actions";
+import { getLeadNextStep } from "@/lib/leads-workflow";
+import type { LeadRecord, LeadStatus, LeadSourceOption, User } from "@/lib/types";
+
+const stageOptions: LeadStatus[] = ["New", "Contacted", "Qualified", "Unqualified"];
+const sourceOptions: LeadSourceOption[] = [
+  "Website",
+  "WhatsApp",
+  "LinkedIn",
+  "Facebook",
+  "Instagram",
+  "Referral",
+  "Email",
+  "Cold Call",
+  "Manual",
+  "Other",
+];
+
+function formatLabel(value: string | null | undefined) {
+  return value && value.trim() ? value : "—";
+}
+
+function formatDateDisplay(value: string | undefined) {
+  if (!value) return "—";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "—";
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(parsed);
+}
+
+function stageBadgeVariant(stage: LeadStatus) {
+  switch (stage) {
+    case "New":
+      return "secondary";
+    case "Contacted":
+      return "info";
+    case "Qualified":
+      return "success";
+    case "Unqualified":
+      return "danger";
+    default:
+      return "outline";
+  }
+}
 
 interface LeadsPageClientProps {
-  leads: LeadRecord[];
+  initialLeads: LeadRecord[];
   owners: User[];
+  archiveFilter: "active" | "archived" | "all";
 }
 
-const LEADS_PAGE_STORAGE_KEY = "finlonexa:leads-page-state";
-
-function readPersistedLeadPageState(): Partial<{ view: ViewMode; filters: LeadFilterState }> {
-  if (typeof window === "undefined") {
-    return {};
-  }
-
-  try {
-    const raw = window.localStorage.getItem(LEADS_PAGE_STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw) as Partial<{ view: ViewMode; filters: LeadFilterState }>;
-    return parsed;
-  } catch {
-    return {};
-  }
-}
-
-function leadMatchesSearch(lead: LeadRecord, query: string) {
-  const haystack = [
-    lead.firstName,
-    lead.lastName,
-    lead.companyName,
-    lead.email,
-    lead.jobTitle,
-    lead.country,
-    lead.city,
-    ...lead.tags,
-  ]
-    .join(" ")
-    .toLowerCase();
-  return haystack.includes(query);
-}
-
-function LeadsSkeleton() {
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <Skeleton className="h-7 w-32" />
-          <Skeleton className="mt-2 h-4 w-64" />
-        </div>
-        <div className="flex gap-2">
-          <Skeleton className="h-9 w-28" />
-          <Skeleton className="h-9 w-24" />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
-        {["Total", "New", "Qualified", "Hot", "Conversion"].map((label) => (
-          <Skeleton key={label} className="h-[76px]" />
-        ))}
-      </div>
-      <Skeleton className="h-[92px]" />
-      <Skeleton className="h-[420px]" />
-    </div>
-  );
-}
-
-function LeadsPageClient({ leads: initialLeads, owners }: LeadsPageClientProps) {
+export function LeadsPageClient({ initialLeads, owners, archiveFilter }: LeadsPageClientProps) {
   const router = useRouter();
-  const persistedState = readPersistedLeadPageState();
-  const statusOverrides = readLeadStatusOverrides();
-  const [leads, setLeads] = useState<LeadRecord[]>(() =>
-    initialLeads.map((lead) => ({
-      ...lead,
-      status: statusOverrides[lead.id] ?? lead.status,
-    }))
-  );
-  const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<LeadFilterState>(persistedState.filters ?? defaultLeadFilters);
-  const [view, setView] = useState<ViewMode>(persistedState.view ?? "table");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [archived, setArchived] = useState<Set<string>>(new Set());
-  const [deleted, setDeleted] = useState<Set<string>>(new Set());
-  const [converted, setConverted] = useState<Record<string, string>>({});
-  const [toast, setToast] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = window.setTimeout(() => setToast(null), 2400);
-    return () => window.clearTimeout(timer);
-  }, [toast]);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(
-        LEADS_PAGE_STORAGE_KEY,
-        JSON.stringify({ view, filters })
-      );
-    } catch {
-      // ignore storage quota or privacy errors
-    }
-  }, [view, filters]);
-
+  const [leads, setLeads] = useState<LeadRecord[]>(initialLeads);
+  const [view, setView] = useState<"table" | "kanban">("table");
+  const [search, setSearch] = useState("");
+  const [stageFilter, setStageFilter] = useState<string>("all");
+  const [ownerFilter, setOwnerFilter] = useState<string>("all");
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [addOpen, setAddOpen] = useState(false);
-  const [editingLead, setEditingLead] = useState<LeadRecord | null>(null);
-  const [convertingLead, setConvertingLead] = useState<LeadRecord | null>(null);
-  const [addTaskFor, setAddTaskFor] = useState<LeadRecord | null>(null);
-  const [importOpen, setImportOpen] = useState(false);
-  const [pendingKanban, setPendingKanban] = useState(false);
-  const [pendingStageChange, setPendingStageChange] = useState<{ id: string; status: LeadStatus } | null>(null);
-  const [pendingStageAi, setPendingStageAi] = useState<string | null>(null);
-  const [pendingStageAiLoading, setPendingStageAiLoading] = useState(false);
-  const [qualifyLeadId, setQualifyLeadId] = useState<string | null>(null);
-  const [unqualifiedLeadId, setUnqualifiedLeadId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setLoading(false), 450);
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = window.setTimeout(() => setToast(null), 2400);
-    return () => window.clearTimeout(timer);
-  }, [toast]);
-
-  useEffect(() => {
-    const id = window.setTimeout(() => {
-      const storedDeleted = readDeletedLeadIds();
-      const stored = readConvertedDeals();
-      if (storedDeleted.length > 0) setDeleted(new Set(storedDeleted));
-      if (Object.keys(stored).length > 0) {
-        setConverted(stored);
-      }
-    }, 0);
-    return () => window.clearTimeout(id);
-  }, []);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const ownerNames = useMemo(() => owners.map((owner) => owner.name), [owners]);
-  const countries = useMemo(
-    () =>
-      [...new Set(leads.map((lead) => lead.country).filter(Boolean))].sort(),
-    [leads]
-  );
-  const tags = useMemo(
-    () => [...new Set(leads.flatMap((lead) => lead.tags))].sort(),
-    [leads]
-  );
+
+  const filteredLeads = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return leads.filter((lead) => {
+      const haystack = [
+        lead.firstName,
+        lead.lastName,
+        lead.companyName,
+        lead.email,
+        lead.phone,
+        lead.ownerName,
+        lead.source,
+        lead.status,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      const matchesSearch = !query || haystack.includes(query);
+      const matchesStage = stageFilter === "all" || lead.status === stageFilter;
+      const matchesOwner = ownerFilter === "all" || lead.ownerName === ownerFilter;
+      const matchesSource = sourceFilter === "all" || lead.source === sourceFilter;
+      return matchesSearch && matchesStage && matchesOwner && matchesSource;
+    });
+  }, [leads, search, stageFilter, ownerFilter, sourceFilter]);
 
   const stats = useMemo(() => {
-    const visible = leads.filter(
-      (lead) => !archived.has(lead.id) && !deleted.has(lead.id)
-    );
-    const total = visible.length;
-    const newLeads = visible.filter((lead) => lead.status === "New").length;
-    const qualified = visible.filter((lead) => lead.status === "Qualified").length;
-    const hot = visible.filter((lead) => lead.score >= 80).length;
-    const conversionRate = total > 0 ? Math.round((qualified / total) * 100) : 0;
-    return { total, newLeads, qualified, hot, conversionRate };
-  }, [leads, archived, deleted]);
-
-  const filtered = useMemo(() => {
-    const query = filters.search.trim().toLowerCase();
-    let result = leads.filter(
-      (lead) => !archived.has(lead.id) && !deleted.has(lead.id)
-    );
-
-    if (query) {
-      result = result.filter((lead) => leadMatchesSearch(lead, query));
-    }
-    if (filters.status !== "all") {
-      result = result.filter((lead) => lead.status === filters.status);
-    }
-    if (filters.source !== "all") {
-      result = result.filter((lead) => lead.source === filters.source);
-    }
-    if (filters.owner !== "all") {
-      result = result.filter((lead) => lead.ownerName === filters.owner);
-    }
-    if (filters.score !== "all") {
-      result = result.filter((lead) => {
-        if (filters.score === "hot") return lead.score >= 80;
-        if (filters.score === "warm") return lead.score >= 60 && lead.score < 80;
-        return lead.score < 60;
-      });
-    }
-    if (filters.country !== "all") {
-      result = result.filter((lead) => lead.country === filters.country);
-    }
-    if (filters.created !== "all") {
-      const days = filters.created === "7d" ? 7 : filters.created === "30d" ? 30 : 90;
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - days);
-      result = result.filter((lead) => new Date(lead.createdAt) >= cutoff);
-    }
-    if (filters.value !== "all") {
-      result = result.filter((lead) => {
-        if (filters.value === "<5k") return lead.expectedValue < 5000;
-        if (filters.value === "5k-15k") return lead.expectedValue >= 5000 && lead.expectedValue <= 15000;
-        return lead.expectedValue > 15000;
-      });
-    }
-    if (filters.tag !== "all") {
-      result = result.filter((lead) => lead.tags.includes(filters.tag));
-    }
-
-    const sorted = [...result];
-    sortLeads(sorted, filters.sort);
-    return sorted;
-  }, [leads, archived, deleted, filters]);
-
-  const setFilter = (patch: Partial<LeadFilterState>) =>
-    setFilters((prev) => ({ ...prev, ...patch }));
-
-  const clearFilters = () => setFilters({ ...defaultLeadFilters });
-
-  const handleAddSubmit = async (data: LeadFormData): Promise<boolean> => {
-    const owner = owners.find((candidate) => candidate.name === data.ownerName);
-    const input = {
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-      phone: data.phone,
-      whatsapp: data.whatsapp,
-      companyName: data.companyName,
-      jobTitle: data.jobTitle,
-      country: data.country,
-      city: data.city,
-      source: data.source,
-      status: data.status,
-      expectedValue: data.expectedValue,
-      interest: data.interest,
-      tags: data.tags,
-      notes: data.notes,
-      ownerId: owner?.id,
+    return {
+      total: leads.length,
+      new: leads.filter((lead) => lead.status === "New").length,
+      contacted: leads.filter((lead) => lead.status === "Contacted").length,
+      qualified: leads.filter((lead) => lead.status === "Qualified").length,
+      unqualified: leads.filter((lead) => lead.status === "Unqualified").length,
     };
+  }, [leads]);
 
-    if (editingLead) {
-      const result = await updateLeadAction({ id: editingLead.id, ...input });
-      if (result.error || !result.lead) {
-        setToast(result.error || "Failed to update lead");
-        window.setTimeout(() => setToast(null), 2400);
-        return false;
-      }
-      setLeads((prev) =>
-        prev.map((lead) => (lead.id === editingLead.id ? result.lead! : lead))
-      );
-    } else {
-      const result = await createLeadAction(input);
-      if (result.error || !result.lead) {
-        setToast(result.error || "Failed to create lead");
-        window.setTimeout(() => setToast(null), 2400);
-        return false;
-      }
-      setLeads((prev) => [result.lead!, ...prev]);
-    }
-    const wasCreating = !editingLead;
-    setEditingLead(null);
-    setAddOpen(false);
-    if (wasCreating) setPendingKanban(true);
-    return true;
-  };
-
-  const openEdit = (lead: LeadRecord) => {
-    setEditingLead(lead);
-    setAddOpen(true);
-  };
-
-  const openCreate = () => {
-    setEditingLead(null);
-    setAddOpen(true);
-  };
-
-  const handleConvert = async (lead: LeadRecord): Promise<string | null> => {
-    const result = await convertLeadAction(lead.id);
-    const dealId = result.dealId;
-
-    if (result.error || !dealId) {
-      setToast(result.error || "Failed to convert lead");
-      return null;
-    }
-
-    writeConvertedDeal(lead.id, dealId);
-    setConverted((prev) => ({ ...prev, [lead.id]: dealId }));
-    router.push(`/deals/${dealId}`);
-    return dealId;
-  };
-
-  const handleArchive = (lead: LeadRecord) => {
-    setArchived((prev) => new Set(prev).add(lead.id));
-  };
-
-  const handleKanbanStatus = async (id: string, status: LeadStatus) => {
-    if (status === "Qualified") {
-      setQualifyLeadId(id);
-      return;
-    }
-
-    if (status === "Unqualified") {
-      setUnqualifiedLeadId(id);
-      return;
-    }
-
-    setPendingStageChange({ id, status });
-  };
-
-  const confirmStageChange = async () => {
-    if (!pendingStageChange) return;
-
-    const { id, status } = pendingStageChange;
-    const previous = leads.find((lead) => lead.id === id)?.status ?? null;
-
-    setLeads((prev) => prev.map((lead) => (lead.id === id ? { ...lead, status } : lead)));
-    writeLeadStatusOverride(id, status);
-
-    const result = await updateLeadStatusAction(id, status, { source: "kanban-approval" });
-    if (result.error || !result.lead) {
-      if (previous) {
-        setLeads((prev) =>
-          prev.map((lead) => (lead.id === id ? { ...lead, status: previous } : lead))
-        );
-      }
-      setToast(result.error || "Failed to update lead stage");
-      setPendingStageChange(null);
-      return;
-    }
-
-    setLeads((prev) =>
-      prev.map((lead) => (lead.id === id ? { ...lead, status: result.lead!.status } : lead))
-    );
-    setPendingStageChange(null);
-  };
-
-  const handleRequestUnqualified = (id: string) => {
-    setUnqualifiedLeadId(id);
-  };
-
-  const handleUseAiInsight = async () => {
-    setPendingStageAiLoading(true);
+  const handleCreateLead = async (values: AddLeadFormState) => {
+    setSubmitting(true);
     try {
-      const response = await fetch("/api/ai/insight", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+      const firstName = values.customerName.trim().split(" ")[0] ?? values.customerName.trim();
+      const lastName = values.customerName.trim().split(" ").slice(1).join(" ") || "";
+      const owner = owners.find((candidate) => candidate.name === values.owner);
+      const result = await createLeadAction({
+        firstName,
+        lastName,
+        email: values.email,
+        phone: values.phone,
+        companyName: values.company,
+        source: values.source as LeadSourceOption,
+        ownerId: owner?.id,
+        notes: values.notes,
       });
-      if (!response.ok) {
-        throw new Error("AI analysis unavailable");
+
+      if (result.error || !result.lead) {
+        window.alert(result.error || "Failed to create lead.");
+        return;
       }
-      const payload = (await response.json()) as { insight?: { headline?: string; detail?: string } };
-      const nextText = payload.insight?.headline || payload.insight?.detail || "AI suggestion generated.";
-      setPendingStageAi(nextText);
-      setToast(nextText);
-    } catch {
-      const fallback = "AI analysis is not available right now. You can continue manually.";
-      setPendingStageAi(fallback);
-      setToast(fallback);
+
+      setLeads((prev) => [result.lead!, ...prev]);
+      setSearch("");
+      setStageFilter("all");
+      setOwnerFilter("all");
+      setSourceFilter("all");
+      router.refresh();
     } finally {
-      setPendingStageAiLoading(false);
+      setSubmitting(false);
     }
   };
 
-  const handleApproveQualification = async (values: QualificationFormValues) => {
-    if (!qualifyLeadId) return;
-    const leadId = qualifyLeadId;
-    const previous = leads.find((lead) => lead.id === leadId)?.status ?? null;
-
-    const result = await updateLeadStatusAction(leadId, "Qualified", {
-      source: "qualification-modal",
-      reason: values.notes || "Qualified by approval",
-      notes: values.notes,
-    });
-
-    if (result.error || !result.lead) {
-      if (previous) {
-        setLeads((prev) =>
-          prev.map((lead) => (lead.id === leadId ? { ...lead, status: previous } : lead))
-        );
-      }
-      setToast(result.error || "Failed to qualify lead");
-      setQualifyLeadId(null);
-      return;
-    }
-
-    setLeads((prev) =>
-      prev.map((lead) => (lead.id === leadId ? { ...lead, status: result.lead!.status } : lead))
-    );
-    writeLeadStatusOverride(leadId, "Qualified");
-    setToast("Lead qualified successfully");
-    setQualifyLeadId(null);
-  };
-
-  const handleConfirmUnqualified = async (reason: string, notes: string) => {
-    if (!unqualifiedLeadId) return;
-    const leadId = unqualifiedLeadId;
-    const previous = leads.find((lead) => lead.id === leadId)?.status ?? null;
-
-    setLeads((prev) =>
-      prev.map((lead) => (lead.id === leadId ? { ...lead, status: "Unqualified" } : lead))
-    );
-    writeLeadStatusOverride(leadId, "Unqualified");
-
-    const result = await updateLeadStatusAction(leadId, "Unqualified", {
-      source: "unqualified-dialog",
-      reason,
-      notes,
-    });
-    if (result.error || !result.lead) {
-      if (previous) {
-        setLeads((prev) =>
-          prev.map((lead) => (lead.id === leadId ? { ...lead, status: previous } : lead))
-        );
-      }
-      setToast(result.error || "Failed to mark lead as unqualified");
-      setUnqualifiedLeadId(null);
-      return;
-    }
-
-    if (reason) {
-      setToast(`Lead marked as Unqualified (${reason})`);
-    } else {
-      setToast("Lead marked as Unqualified");
-    }
-    if (notes.trim()) {
-      setToast((prev) => prev ?? "Lead marked as Unqualified");
-    }
-    setUnqualifiedLeadId(null);
-  };
-
-  const qualifyLead =
-    qualifyLeadId !== null ? leads.find((lead) => lead.id === qualifyLeadId) ?? null : null;
-  const unqualifiedLead =
-    unqualifiedLeadId !== null ? leads.find((lead) => lead.id === unqualifiedLeadId) ?? null : null;
-
-  const handleDeleteRow = async (lead: LeadRecord) => {
-    const result = await deleteLeadAction(lead.id);
-    if (!result.ok) {
-      setToast(result.error || "Failed to delete lead");
-      return;
-    }
-
-    markLeadDeleted(lead.id);
-    setLeads((prev) => prev.filter((item) => item.id !== lead.id));
-    setSelected((prev) => {
-      const next = new Set(prev);
-      next.delete(lead.id);
-      return next;
-    });
-    setArchived((prev) => {
-      const next = new Set(prev);
-      next.delete(lead.id);
-      return next;
-    });
-    setToast("Lead deleted");
-  };
-
-  const toggleSelected = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const toggleAll = (checked: boolean) => {
-    setSelected(checked ? new Set(filtered.map((lead) => lead.id)) : new Set());
-  };
-
-  const bulkAssignOwner = (ownerName: string) => {
-    setLeads((prev) =>
-      prev.map((lead) =>
-        selected.has(lead.id)
-          ? {
-              ...lead,
-              ownerName,
-              ownerId: owners.find((owner) => owner.name === ownerName)?.id ?? lead.ownerId,
-            }
-          : lead
-      )
-    );
-  };
-
-  const bulkStatus = (status: LeadStatus) => {
-    setLeads((prev) =>
-      prev.map((lead) => {
-        if (!selected.has(lead.id)) return lead;
-        writeLeadStatusOverride(lead.id, status);
-        return { ...lead, status };
-      })
-    );
-  };
-
-  const bulkConvert = () => {
-    const next = { ...converted };
-    for (const id of selected) {
-      if (!next[id]) {
-        const dealId = `DEAL-${1042 + Math.floor(Math.random() * 800)}`;
-        next[id] = dealId;
-        writeConvertedDeal(id, dealId);
-      }
-    }
-    setConverted(next);
-  };
-
-  const bulkDelete = async () => {
-    const ids = [...selected];
-    if (ids.length === 0) return;
-
-    const results = await Promise.all(ids.map((id) => deleteLeadAction(id)));
-    if (results.some((result) => !result.ok)) {
-      setToast("One or more leads could not be deleted");
-      return;
-    }
-
-    for (const id of ids) {
-      markLeadDeleted(id);
-    }
-    setLeads((prev) => prev.filter((lead) => !selected.has(lead.id)));
-    setSelected(new Set());
-    setToast(`${ids.length} lead${ids.length > 1 ? "s" : ""} deleted`);
-  };
-
-  const handleTaskSubmit = (task: NewTaskData) => {
-    if (!addTaskFor) return;
-    const leadTask: LeadTask = {
-      id: `t_${Date.now().toString(36)}`,
-      title: task.title,
-      due: task.due,
-      priority: task.priority,
-      status: "Open",
-      owner: task.owner,
-    };
-    writePersistedTask(addTaskFor.id, leadTask);
-    setToast(`Task added for ${fullName(addTaskFor)}`);
-    setAddTaskFor(null);
-  };
-
-  const viewLead = (id: string) => {
-    router.push(`/leads/${id}`);
-  };
-
-  const importLeads = (imported: LeadRecord[]) => {
-    if (imported.length > 0) {
-      setLeads((prev) => [...imported, ...prev]);
-    }
-  };
-
-  if (loading) {
-    return <LeadsSkeleton />;
-  }
+  const kanbanColumns = stageOptions.map((state) => ({
+    state,
+    items: filteredLeads.filter((lead) => lead.status === state),
+  }));
 
   return (
-    <div className="space-y-4">
-      <LeadsHeader onAddLead={openCreate} onImport={() => router.push("/leads/import")} />
-      <LeadsStats stats={stats} />
+    <main className="space-y-6 p-6 lg:p-8">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h1 className="text-[28px] font-bold tracking-tight text-ink">Leads</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Manage and progress potential customers through your sales process.
+          </p>
+        </div>
 
-      <LeadsFilters
-        filters={filters}
-        onChange={setFilter}
-        onClear={clearFilters}
-        view={view}
-        onViewChange={setView}
-        owners={ownerNames}
-        countries={countries}
-        tags={tags}
-        resultCount={filtered.length}
-      />
+        <div className="flex flex-wrap gap-2">
+          <Button size="lg" variant="outline" onClick={() => setExportOpen(true)}>
+            Export Data
+          </Button>
+          <Button size="lg" onClick={() => setAddOpen(true)}>
+            <Plus className="h-4 w-4" aria-hidden />
+            Add Lead
+          </Button>
+        </div>
+      </div>
+
+      <ExportDataDialog open={exportOpen} onOpenChange={setExportOpen} defaultScope="leads" title="Export Leads" />
+
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+        {[
+          { label: "Total Leads", value: stats.total },
+          { label: "New", value: stats.new },
+          { label: "Contacted", value: stats.contacted },
+          { label: "Qualified", value: stats.qualified },
+          { label: "Unqualified", value: stats.unqualified },
+        ].map((card) => (
+          <Card key={card.label} className="p-4">
+            <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">{card.label}</p>
+            <p className="mt-3 text-3xl font-bold tracking-tight text-ink">{card.value}</p>
+          </Card>
+        ))}
+      </div>
+
+      <Card className="p-4">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2 rounded-lg border border-input bg-card px-3 py-2 text-sm text-muted-foreground min-w-[260px]">
+              <Search className="h-4 w-4" />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search leads..."
+                className="w-full border-0 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+              />
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Select value={stageFilter} onValueChange={setStageFilter}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Stage" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All stages</SelectItem>
+                  {stageOptions.map((stage) => (
+                    <SelectItem key={stage} value={stage}>{stage}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Owner" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All owners</SelectItem>
+                  {ownerNames.map((owner) => (
+                    <SelectItem key={owner} value={owner}>{owner}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Source" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All sources</SelectItem>
+                  {sourceOptions.map((source) => (
+                    <SelectItem key={source} value={source}>{source}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={archiveFilter} onValueChange={(value) => { window.location.href = `/leads?archive=${value}`; }}>
+                <SelectTrigger className="w-[150px]"><SelectValue placeholder="Records" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="archived">Archived</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant={view === "table" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setView("table")}
+            >
+              <TableProperties className="h-4 w-4" aria-hidden />
+              Table
+            </Button>
+            <Button
+              type="button"
+              variant={view === "kanban" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setView("kanban")}
+            >
+              <KanbanIcon className="h-4 w-4" aria-hidden />
+              Kanban
+            </Button>
+          </div>
+        </div>
+      </Card>
 
       {view === "table" ? (
-        <LeadsTable
-          leads={filtered}
-          converted={converted}
-          selected={selected}
-          onToggleSelected={toggleSelected}
-          onToggleAll={toggleAll}
-          onClearSelection={() => setSelected(new Set())}
-          onView={viewLead}
-          onEdit={openEdit}
-          onConvert={(lead) => setConvertingLead(lead)}
-          onAddTask={(lead) => setAddTaskFor(lead)}
-          onArchive={handleArchive}
-          onDelete={handleDeleteRow}
-          onBulkAssignOwner={bulkAssignOwner}
-          onBulkStatus={bulkStatus}
-          onBulkConvert={bulkConvert}
-          onBulkDelete={bulkDelete}
-          onClearFilters={clearFilters}
-          owners={ownerNames}
-        />
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-[1100px] w-full text-left text-sm">
+              <thead className="bg-muted/50 text-xs uppercase tracking-[0.12em] text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-3">Lead</th>
+                  <th className="px-4 py-3">Company</th>
+                  <th className="px-4 py-3">Contact</th>
+                  <th className="px-4 py-3">Stage</th>
+                  <th className="px-4 py-3">Source</th>
+                  <th className="px-4 py-3">Owner</th>
+                  <th className="px-4 py-3">Last Activity</th>
+                  <th className="px-4 py-3">Next Step</th>
+                  <th className="px-4 py-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredLeads.map((lead) => {
+                  const nextStep = getLeadNextStep(lead.status);
+                  return (
+                    <tr key={lead.id} className="border-t border-border align-top">
+                      <td className="px-4 py-3">
+                        <button
+                          type="button"
+                          onClick={() => router.push(`/leads/${lead.id}`)}
+                          className="text-left"
+                        >
+                          <div className="font-medium text-ink">{`${lead.firstName} ${lead.lastName}`.trim() || "Unnamed lead"}</div>
+                          <div className="text-xs text-muted-foreground">{lead.email || "—"}</div>
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-foreground">{formatLabel(lead.companyName)}</td>
+                      <td className="px-4 py-3 text-foreground">{formatLabel(lead.phone || lead.email)}</td>
+                      <td className="px-4 py-3">
+                        <Badge variant={stageBadgeVariant(lead.status)}>{lead.status.toUpperCase()}</Badge>
+                      </td>
+                      <td className="px-4 py-3 text-foreground">{formatLabel(lead.source)}</td>
+                      <td className="px-4 py-3 text-foreground">{formatLabel(lead.ownerName)}</td>
+                      <td className="px-4 py-3 text-foreground">{formatDateDisplay(lead.lastActivityAt)}</td>
+                      <td className="px-4 py-3 text-foreground">{nextStep.title}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => router.push(`/leads/${lead.id}`)}>Open <ArrowRight className="h-4 w-4" aria-hidden /></Button>
+                          <RecordManagementMenu type="lead" id={lead.id} name={`${lead.firstName} ${lead.lastName}`.trim() || "Lead"} converted={Boolean(lead.convertedDealId)} archived={Boolean(lead.archivedAt)} directDelete onRefresh={() => router.refresh()} />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       ) : (
-        <LeadKanban
-          leads={filtered}
-          converted={converted}
-          movingLeadId={null}
-          onView={viewLead}
-          onAddLead={openCreate}
-          onMoveStage={handleKanbanStatus}
-          onRequestUnqualified={handleRequestUnqualified}
-        />
+        <div className="grid gap-4 xl:grid-cols-4">
+          {kanbanColumns.map(({ state, items }) => (
+            <div key={state} className="rounded-2xl border border-border bg-card p-3">
+              <div className="mb-3 flex items-center justify-between px-1">
+                <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground">{state}</h2>
+                <Badge variant={stageBadgeVariant(state)}>{items.length}</Badge>
+              </div>
+
+              <div className="space-y-3">
+                {items.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+                    No leads in this stage.
+                  </div>
+                ) : (
+                  items.map((lead) => (
+                    <button
+                      key={lead.id}
+                      type="button"
+                      onClick={() => router.push(`/leads/${lead.id}`)}
+                      className="w-full rounded-xl border border-border bg-background p-3 text-left shadow-sm transition hover:border-primary/50 hover:bg-muted/30"
+                    >
+                      <div className="font-medium text-ink">{`${lead.firstName} ${lead.lastName}`.trim() || "Unnamed lead"}</div>
+                      <div className="mt-2 text-xs text-muted-foreground">{formatLabel(lead.companyName)}</div>
+                      <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{formatLabel(lead.ownerName)}</span>
+                        <span>{getLeadNextStep(lead.status).title}</span>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
 
       <AddLeadDialog
         open={addOpen}
+        owners={ownerNames}
+        loading={submitting}
         onOpenChange={setAddOpen}
-        owners={owners}
-        initial={editingLead ? leadToForm(editingLead) : null}
-        mode={editingLead ? "edit" : "create"}
-        onSubmit={handleAddSubmit}
+        onCreate={handleCreateLead}
       />
-
-      <Dialog open={pendingKanban} onOpenChange={setPendingKanban}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Lead saved</DialogTitle>
-            <DialogDescription>
-              Your lead has been saved successfully. Move to the Kanban board?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setPendingKanban(false)}>
-              Not now
-            </Button>
-            <Button
-              onClick={() => {
-                setPendingKanban(false);
-                setView("kanban");
-              }}
-            >
-              Yes, open Kanban
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <LeadApprovalDialog
-        open={Boolean(pendingStageChange)}
-        onOpenChange={(open) => {
-          if (!open) setPendingStageChange(null);
-        }}
-        title={
-          pendingStageChange?.status === "Contacted"
-            ? "Move lead to Contacted?"
-            : pendingStageChange?.status === "Proposal"
-              ? "Move lead to Proposal?"
-              : "Approve stage change?"
-        }
-        description="The system detected a meaningful sales update and prepared the next stage for your review."
-        summary={
-          pendingStageChange?.status === "Contacted"
-            ? "This will move the lead from New to Contacted and log the customer interaction as a valid sales touchpoint."
-            : pendingStageChange?.status === "Proposal"
-              ? "This will update the lead into Proposal stage and keep the sales workflow ready for the next action."
-              : "This action will update the lead stage and log the change with the approval context."
-        }
-        primaryLabel="Approve & Move"
-        secondaryLabel="Not now"
-        showAi={pendingStageChange?.status === "Contacted"}
-        onAi={handleUseAiInsight}
-        aiSummary={pendingStageAi}
-        aiLoading={pendingStageAiLoading}
-        onApprove={confirmStageChange}
-      />
-
-      <QualifyLeadDialog
-        open={Boolean(qualifyLeadId)}
-        onOpenChange={(open) => {
-          if (!open) setQualifyLeadId(null);
-        }}
-        lead={qualifyLead}
-        onConfirm={handleApproveQualification}
-      />
-
-      <UnqualifiedReasonDialog
-        open={Boolean(unqualifiedLeadId)}
-        onOpenChange={(open) => {
-          if (!open) setUnqualifiedLeadId(null);
-        }}
-        leadName={unqualifiedLead ? fullName(unqualifiedLead) : ""}
-        onConfirm={handleConfirmUnqualified}
-      />
-
-      <ConvertLeadDialog
-        open={Boolean(convertingLead)}
-        onOpenChange={(open) => {
-          if (!open) setConvertingLead(null);
-        }}
-        lead={convertingLead}
-        owners={owners}
-        onConvert={handleConvert}
-      />
-
-      <AddTaskDialog
-        open={Boolean(addTaskFor)}
-        onOpenChange={(open) => {
-          if (!open) setAddTaskFor(null);
-        }}
-        owners={owners}
-        defaultOwner={addTaskFor?.ownerName ?? ""}
-        onSubmit={handleTaskSubmit}
-      />
-
-      <ImportLeadDialog
-        open={importOpen}
-        onOpenChange={setImportOpen}
-        owners={owners}
-        onImport={importLeads}
-      />
-
-      {toast && (
-        <div
-          className="pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-ink px-4 py-2 text-sm text-white shadow-lg"
-          aria-live="polite"
-        >
-          {toast}
-        </div>
-      )}
-    </div>
+    </main>
   );
 }
-
-function sortLeads(leads: LeadRecord[], sort: LeadFilterState["sort"]) {
-  switch (sort) {
-    case "newest":
-      leads.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
-      break;
-    case "oldest":
-      leads.sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt));
-      break;
-    case "score":
-      leads.sort((a, b) => b.score - a.score);
-      break;
-    case "recent":
-      leads.sort((a, b) => +new Date(b.lastActivityAt) - +new Date(a.lastActivityAt));
-      break;
-  }
-}
-
-function leadToForm(lead: LeadRecord): Partial<LeadFormData> {
-  return {
-    firstName: lead.firstName,
-    lastName: lead.lastName,
-    email: lead.email,
-    phone: lead.phone,
-    whatsapp: lead.whatsapp,
-    companyName: lead.companyName,
-    jobTitle: lead.jobTitle,
-    country: lead.country,
-    city: lead.city,
-    source: lead.source,
-    status: lead.status,
-    ownerName: lead.ownerName,
-    expectedValue: lead.expectedValue ? String(lead.expectedValue) : "",
-    interest: lead.interest,
-    tags: lead.tags.join(", "),
-    notes: "",
-  };
-}
-
-export { LeadsPageClient };

@@ -16,7 +16,13 @@ import { TasksTable } from "@/components/activities/tasks-table";
 import { TasksBoard } from "@/components/activities/tasks-board";
 import { MyTasksView } from "@/components/activities/my-tasks-view";
 import { AddTaskDialog, type TaskFormValues } from "@/components/activities/add-task-dialog";
-import { readStoredTasks, removeTask, uid, upsertTask } from "@/lib/activity-local";
+import {
+  readDeletedTaskIds,
+  readStoredTasks,
+  removeTask,
+  uid,
+  upsertTask,
+} from "@/lib/activity-local";
 import { useCurrentUser } from "@/lib/current-user";
 import type { CrmTask } from "@/lib/types";
 
@@ -71,8 +77,14 @@ function TasksPageClient({ initialTasks, owners }: TasksPageClientProps) {
 
   useEffect(() => {
     const id = window.setTimeout(() => {
-      const stored = readStoredTasks();
-      const merged = [...stored, ...initialTasks.filter((task) => !stored.some((t) => t.id === task.id))];
+      const deleted = readDeletedTaskIds();
+      const stored = readStoredTasks().filter((task) => !deleted.has(task.id));
+      const merged = [
+        ...stored,
+        ...initialTasks.filter(
+          (task) => !deleted.has(task.id) && !stored.some((t) => t.id === task.id),
+        ),
+      ];
       setTasks(merged);
     }, 0);
     return () => window.clearTimeout(id);

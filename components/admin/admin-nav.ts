@@ -1,19 +1,10 @@
 import {
-  Activity,
-  Building2,
-  CreditCard,
-  Flag,
-  Gauge,
-  Headphones,
   LayoutDashboard,
-  Plug,
+  BriefcaseBusiness,
+  ContactRound,
   ScrollText,
   Settings,
-  ShieldCheck,
-  Sparkles,
-  TrendingUp,
   Users,
-  Workflow,
   type LucideIcon,
 } from "lucide-react";
 
@@ -26,19 +17,10 @@ export interface AdminNavItem {
 /** Platform Administration navigation (Phase 7). */
 export const adminNavItems: AdminNavItem[] = [
   { label: "Overview", href: "/admin", icon: LayoutDashboard },
-  { label: "Organizations", href: "/admin/organizations", icon: Building2 },
-  { label: "Users", href: "/admin/users", icon: Users },
-  { label: "Subscriptions", href: "/admin/subscriptions", icon: TrendingUp },
-  { label: "Billing", href: "/admin/billing", icon: CreditCard },
-  { label: "Support", href: "/admin/support", icon: Headphones },
-  { label: "Usage & Limits", href: "/admin/usage", icon: Gauge },
-  { label: "AI Operations", href: "/admin/ai", icon: Sparkles },
-  { label: "Automations", href: "/admin/automations", icon: Workflow },
-  { label: "Integrations", href: "/admin/integrations", icon: Plug },
-  { label: "System Health", href: "/admin/system", icon: Activity },
+  { label: "Leads", href: "/admin/leads", icon: ContactRound },
+  { label: "Opportunities", href: "/admin/opportunities", icon: BriefcaseBusiness },
+  { label: "Users & Access", href: "/admin/users", icon: Users },
   { label: "Audit Logs", href: "/admin/audit", icon: ScrollText },
-  { label: "Feature Flags", href: "/admin/feature-flags", icon: Flag },
-  { label: "Org Controls", href: "/admin/controls", icon: ShieldCheck },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
 

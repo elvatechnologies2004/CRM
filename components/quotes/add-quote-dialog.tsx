@@ -46,7 +46,7 @@ interface AddQuoteDialogProps {
     expiryDate?: string;
     notes?: string;
   }) => void;
-  nextNumber: string;
+  nextNumber?: string;
   busy?: boolean;
   initial?: QuoteFormInit | null;
 }
@@ -108,7 +108,7 @@ function AddQuoteDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label>Quote Number</Label>
-            <Input value={nextNumber} disabled />
+            <Input value={nextNumber || "Auto-assigned"} disabled />
           </div>
           <div>
             <Label>Customer Name</Label>

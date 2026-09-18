@@ -1,33 +1,26 @@
-import { LeadsPageClient } from "@/components/leads/leads-page-client";
-import { getActiveOrgId, fetchOwnerIndex } from "@/lib/crm/base";
-import { getLeads } from "@/lib/crm/leads";
-import { isSupabaseConfigured } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { leadMocks, leadOwners } from "@/lib/mock-leads";
-import type { User } from "@/lib/types";
+import { getLeads } from "@/lib/crm/leads";
+import { fetchOwnerIndex, getActiveOrgId } from "@/lib/crm/base";
+import { LeadsPageClient } from "@/components/leads/leads-page-client";
 
-export default async function LeadsPage() {
-  const result = await getLeads();
-  let leads = result.rows;
-  let owners: User[] = leadOwners;
+export default async function LeadsPage({ searchParams }: { searchParams: Promise<{ archive?: string }> }) {
+  const params = await searchParams;
+  const archiveFilter = params.archive === "archived" || params.archive === "all" ? params.archive : "active";
+  const [initialLeadsResult, supabase] = await Promise.all([
+    getLeads({ page: 1, pageSize: 100, archiveFilter }),
+    createSupabaseServerClient(),
+  ]);
 
-  if (leads.length > 0) {
-    if (isSupabaseConfigured()) {
-      const supabase = await createSupabaseServerClient();
-      const organizationId = await getActiveOrgId(supabase);
-      if (organizationId) {
-        const index = await fetchOwnerIndex(supabase, organizationId);
-        owners = Object.entries(index).map(([id, { name, email }]) => ({
-          id,
-          name,
-          role: "Member",
-          email: email ?? `${id}@org.local`,
-        }));
-      }
-    }
-  } else {
-    leads = leadMocks;
-  }
+  const organizationId = await getActiveOrgId(supabase);
+  const owners = organizationId
+    ? Object.entries(await fetchOwnerIndex(supabase, organizationId)).map(([id, value]) => ({
+        id,
+        name: value.name,
+        role: "Member",
+        email: value.email ?? "",
+        organizationId,
+      }))
+    : [];
 
-  return <LeadsPageClient leads={leads} owners={owners} />;
+  return <LeadsPageClient initialLeads={initialLeadsResult.rows} owners={owners} archiveFilter={archiveFilter} />;
 }

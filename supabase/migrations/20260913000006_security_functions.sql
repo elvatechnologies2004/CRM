@@ -335,9 +335,9 @@ begin
     contact_id, company_id, deal_id, lead_id, title, occurred_at)
   values
     (v_org_id, 'lead_converted', 'lead', p_lead_id, v_user_id, v_contact_id, v_company_id, v_deal_id, p_lead_id,
-     'Lead converted to a deal', now()),
+     'Lead converted to Opportunity', now()),
     (v_org_id, 'deal_created', 'deal', v_deal_id, v_user_id, v_contact_id, v_company_id, v_deal_id, p_lead_id,
-     'Deal created from lead', now());
+     'Opportunity created from Lead', now());
 
   return v_deal_id;
 end;

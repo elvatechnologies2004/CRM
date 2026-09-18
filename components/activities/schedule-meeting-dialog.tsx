@@ -1,32 +1,16 @@
 "use client";
 
 import { useState } from "react";
-
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { meetingTypes } from "@/lib/mock-meetings";
-import type { MeetingType } from "@/lib/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export interface ScheduleMeetingForm {
   title: string;
-  meetingType: MeetingType;
+  meetingType: "Discovery" | "Product Demo" | "Follow-up" | "Negotiation" | "Contract Signing" | "Internal" | "Kickoff" | "Check-in";
   date: string;
   time: string;
   duration: string;
@@ -34,189 +18,90 @@ export interface ScheduleMeetingForm {
   notes?: string;
 }
 
-const toDateInput = (date: Date) => {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-};
-
-interface ScheduleMeetingDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  owners: string[];
-  onSubmit: (form: ScheduleMeetingForm) => void;
-}
-
-function ScheduleMeetingDialog({ open, onOpenChange, owners, onSubmit }: ScheduleMeetingDialogProps) {
-  const [form, setForm] = useState<ScheduleMeetingForm>({
-    title: "",
-    meetingType: "Discovery",
-    date: toDateInput(new Date()),
-    time: "10:00",
-    duration: "30",
-    ownerName: owners[0] ?? "",
-    notes: "",
-  });
-  const [error, setError] = useState<string | null>(null);
-  const [prevOpen, setPrevOpen] = useState(open);
-
-  if (open !== prevOpen) {
-    setPrevOpen(open);
-    if (open) {
-      setForm({
-        title: "",
-        meetingType: "Discovery",
-        date: toDateInput(new Date()),
-        time: "10:00",
-        duration: "30",
-        ownerName: owners[0] ?? "",
-        notes: "",
-      });
-      setError(null);
-    }
-  }
-
-  const update = (patch: Partial<ScheduleMeetingForm>) => setForm((prev) => ({ ...prev, ...patch }));
+export function ScheduleMeetingDialog({ open, onOpenChange, owners, onSubmit }: { open: boolean; onOpenChange: (open: boolean) => void; owners: string[]; onSubmit: (form: ScheduleMeetingForm) => boolean }) {
+  const [title, setTitle] = useState("");
+  const [meetingType, setMeetingType] = useState<ScheduleMeetingForm["meetingType"]>("Discovery");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [time, setTime] = useState("09:00");
+  const [duration, setDuration] = useState("30");
+  const [ownerName, setOwnerName] = useState(owners[0] ?? "");
+  const [notes, setNotes] = useState("");
 
   const handleSubmit = () => {
-    if (!form.title.trim()) {
-      setError("Meeting title is required.");
-      return;
-    }
-    if (!form.date) {
-      setError("Pick a date.");
-      return;
-    }
-    setError(null);
-    onSubmit({ ...form, title: form.title.trim() });
-    onOpenChange(false);
+    if (!title.trim()) return;
+    const ok = onSubmit({ title: title.trim(), meetingType, date, time, duration, ownerName, notes: notes.trim() || undefined });
+    if (ok) onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Schedule Meeting</DialogTitle>
-          <DialogDescription>Plan an external or internal meeting.</DialogDescription>
+          <DialogTitle>Schedule meeting</DialogTitle>
+          <DialogDescription>Create a new meeting for the team.</DialogDescription>
         </DialogHeader>
-
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="meeting-title">
-              Meeting title <span className="text-danger">*</span>
-            </Label>
-            <Input
-              id="meeting-title"
-              value={form.title}
-              onChange={(event) => update({ title: event.target.value })}
-              placeholder="Discovery call — Ahmed & Co"
-              autoFocus
-            />
-            {error && <p className="text-xs text-danger">{error}</p>}
+            <Label htmlFor="schedule-title">Title</Label>
+            <Input id="schedule-title" value={title} onChange={(event) => setTitle(event.target.value)} />
           </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Type</Label>
-              <Select
-                value={form.meetingType}
-                onValueChange={(value) => update({ meetingType: value as MeetingType })}
-              >
-                <SelectTrigger aria-label="Meeting type">
-                  <SelectValue />
-                </SelectTrigger>
+              <Select value={meetingType} onValueChange={(value) => setMeetingType(value as ScheduleMeetingForm["meetingType"])}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {meetingTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
+                  {[
+                    "Discovery",
+                    "Product Demo",
+                    "Follow-up",
+                    "Negotiation",
+                    "Contract Signing",
+                    "Internal",
+                    "Kickoff",
+                    "Check-in",
+                  ].map((option) => (
+                    <SelectItem key={option} value={option}>{option}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Owner</Label>
-              <Select
-                value={form.ownerName}
-                onValueChange={(value) => update({ ownerName: value })}
-              >
-                <SelectTrigger aria-label="Owner">
-                  <SelectValue />
-                </SelectTrigger>
+              <Select value={ownerName} onValueChange={setOwnerName}>
+                <SelectTrigger><SelectValue placeholder="Select owner" /></SelectTrigger>
                 <SelectContent>
                   {owners.map((owner) => (
-                    <SelectItem key={owner} value={owner}>
-                      {owner}
-                    </SelectItem>
+                    <SelectItem key={owner} value={owner}>{owner}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
-
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
-              <Label htmlFor="meeting-date">Date</Label>
-              <Input
-                id="meeting-date"
-                type="date"
-                value={form.date}
-                onChange={(event) => update({ date: event.target.value })}
-              />
+              <Label htmlFor="schedule-date">Date</Label>
+              <Input id="schedule-date" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="meeting-time">Time</Label>
-              <Input
-                id="meeting-time"
-                type="time"
-                value={form.time}
-                onChange={(event) => update({ time: event.target.value })}
-              />
+              <Label htmlFor="schedule-time">Time</Label>
+              <Input id="schedule-time" type="time" value={time} onChange={(event) => setTime(event.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label>Duration</Label>
-              <Select
-                value={form.duration}
-                onValueChange={(value) => update({ duration: value })}
-              >
-                <SelectTrigger aria-label="Duration">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {["15", "30", "45", "60", "90"].map((duration) => (
-                    <SelectItem key={duration} value={duration}>
-                      {duration}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="schedule-duration">Duration</Label>
+              <Input id="schedule-duration" value={duration} onChange={(event) => setDuration(event.target.value)} />
             </div>
           </div>
-
           <div className="space-y-1.5">
-            <Label htmlFor="meeting-notes">Notes / agenda</Label>
-            <Textarea
-              id="meeting-notes"
-              value={form.notes ?? ""}
-              onChange={(event) => update({ notes: event.target.value })}
-              rows={2}
-              placeholder="Discuss requirements and next steps..."
-            />
+            <Label htmlFor="schedule-notes">Notes</Label>
+            <Textarea id="schedule-notes" value={notes} rows={3} onChange={(event) => setNotes(event.target.value)} />
           </div>
         </div>
-
         <DialogFooter>
-          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button type="button" onClick={handleSubmit}>
-            Schedule
-          </Button>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={handleSubmit}>Save meeting</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-
-export { ScheduleMeetingDialog };

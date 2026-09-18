@@ -149,7 +149,7 @@ function MeetingsPageClient({ initialMeetings, owners }: MeetingsPageClientProps
     setToast(`Meeting marked ${meetingStatusConfig[status].label.toLowerCase()}`);
   };
 
-  const handleSchedule = (form: ScheduleMeetingForm) => {
+  const handleSchedule = (form: ScheduleMeetingForm): boolean => {
     const meeting: CrmMeeting = {
       id: uid("mt"),
       title: form.title,
@@ -168,6 +168,7 @@ function MeetingsPageClient({ initialMeetings, owners }: MeetingsPageClientProps
     upsertMeeting(meeting);
     setMeetings((prev) => [meeting, ...prev]);
     setToast("Meeting scheduled");
+    return true;
   };
 
   if (loading) return <MeetingsSkeleton />;

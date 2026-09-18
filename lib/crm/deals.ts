@@ -21,6 +21,7 @@ export interface DealQuery {
   status?: string;
   page?: number;
   pageSize?: number;
+  archiveFilter?: "active" | "archived" | "all";
 }
 
 interface DealRow {
@@ -49,6 +50,7 @@ interface DealRow {
   win_reason: string | null;
   lost_reason: string | null;
   competitor: string | null;
+  archived_at: string | null;
 }
 
 interface DealEmbed {
@@ -64,7 +66,9 @@ function daysBetween(from: Date, to: Date): number {
 
 function normalizeDealStageName(name: string | null | undefined): string {
   if (!name) return "New Opportunity";
-  return name === "New" ? "New Opportunity" : name;
+  const normalized = name.trim();
+  if (normalized.toLowerCase() === "new") return "New Opportunity";
+  return normalized;
 }
 
 export function mapDealRow(
@@ -110,6 +114,7 @@ export function mapDealRow(
     winReason: (row.win_reason as DealRecord["winReason"]) ?? undefined,
     lostReason: (row.lost_reason as DealRecord["lostReason"]) ?? undefined,
     competitor: row.competitor ?? undefined,
+    archivedAt: row.archived_at ? toIso(row.archived_at) : undefined,
   };
 }
 
@@ -132,8 +137,10 @@ export async function getDeals(query: DealQuery = {}) {
       count: "exact",
     })
     .eq("organization_id", organizationId)
-    .is("archived_at", null)
     .range(from, to);
+
+  if (query.archiveFilter !== "all" && query.archiveFilter !== "archived") b = b.is("archived_at", null);
+  if (query.archiveFilter === "archived") b = b.not("archived_at", "is", null);
 
   if (query.search) {
     const like = `%${query.search}%`;
@@ -254,12 +261,12 @@ export async function createDeal(input: DealCreateInput): Promise<DealRecord | n
   const organizationId = await ensureOrgForWrite(supabase);
   const { data: userData } = await supabase.auth.getUser();
 
-  // Resolve default pipeline + first open stage when not provided.
+  // Resolve default pipeline + the canonical New Opportunity stage when not provided.
   let stageId = input.stageId;
   let pipelineId = input.pipelineId;
-  let defaultProbability = input.probability ?? 0;
+  let defaultProbability = Math.min(Math.max(input.probability ?? 0, 0), 100);
 
-  if (!stageId || !pipelineId) {
+  if (!pipelineId) {
     const { data: pipe } = await supabase
       .from("pipelines")
       .select("id")
@@ -268,22 +275,30 @@ export async function createDeal(input: DealCreateInput): Promise<DealRecord | n
       .limit(1)
       .maybeSingle();
     pipelineId = pipe?.id ?? null;
-    if (pipelineId) {
-      const { data: st } = await supabase
-        .from("pipeline_stages")
-        .select("id, default_probability")
-        .eq("pipeline_id", pipelineId)
-        .eq("stage_type", "open")
-        .order("position")
-        .limit(1)
-        .maybeSingle();
-      stageId = st?.id ?? null;
-      defaultProbability = st?.default_probability ?? input.probability ?? 0;
-    }
   }
 
-  const prob = defaultProbability;
-  const value = input.value ?? 0;
+  if (pipelineId && !stageId) {
+    const { data: stages } = await supabase
+      .from("pipeline_stages")
+      .select("id, default_probability, name")
+      .eq("pipeline_id", pipelineId)
+      .eq("organization_id", organizationId)
+      .eq("stage_type", "open")
+      .order("position", { ascending: true });
+
+    const initialStage = (stages ?? []).find((stage) => {
+      const name = (stage.name ?? "").trim();
+      return name.toLowerCase() === "new opportunity" || name.toLowerCase() === "new";
+    }) ?? (stages ?? [])[0] ?? null;
+
+    stageId = initialStage?.id ?? null;
+    defaultProbability = typeof initialStage?.default_probability === "number"
+      ? Math.min(Math.max(initialStage.default_probability, 0), 100)
+      : defaultProbability;
+  }
+
+  const prob = Math.min(Math.max(defaultProbability, 0), 100);
+  const value = Math.max(input.value ?? 0, 0);
 
   const { data } = await supabase
     .from("deals")
@@ -298,7 +313,7 @@ export async function createDeal(input: DealCreateInput): Promise<DealRecord | n
       currency: input.currency ?? "PKR",
       probability: prob,
       expected_revenue: Math.round(value * prob) / 100,
-      expected_close_date: input.expectedCloseDate ?? null,
+      expected_close_date: input.expectedCloseDate && input.expectedCloseDate.trim() ? input.expectedCloseDate : null,
       owner_id: input.ownerId ?? userData.user?.id ?? null,
       source: input.source ?? "Manual",
       description: input.description ?? null,
@@ -370,17 +385,17 @@ export async function updateDeal(input: DealUpdateInput): Promise<DealRecord | n
         probability = current?.probability ?? 0;
       }
     }
-    patch.probability = probability;
+    patch.probability = Math.min(Math.max(probability ?? 0, 0), 100);
     if (input.value !== undefined) {
-      const finalProbability = probability ?? 0;
-      patch.value = input.value;
-      patch.expected_revenue = Math.round(input.value * finalProbability) / 100;
+      const finalProbability = Math.min(Math.max(probability ?? 0, 0), 100);
+      patch.value = Math.max(input.value, 0);
+      patch.expected_revenue = Math.round(Math.max(input.value, 0) * finalProbability) / 100;
     }
   }
   if (input.name !== undefined) patch.name = input.name;
   if (input.stageId !== undefined) patch.stage_id = input.stageId;
   if (input.currency !== undefined) patch.currency = input.currency;
-  if (input.expectedCloseDate !== undefined) patch.expected_close_date = input.expectedCloseDate || null;
+  if (input.expectedCloseDate !== undefined) patch.expected_close_date = input.expectedCloseDate && input.expectedCloseDate.trim() ? input.expectedCloseDate : null;
   if (input.ownerId !== undefined) patch.owner_id = input.ownerId || null;
   if (input.source !== undefined) patch.source = input.source;
   if (input.description !== undefined) patch.description = input.description;
@@ -413,12 +428,13 @@ export async function deleteDeal(id: string): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
   const organizationId = await ensureOrgForWrite(supabase);
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("deals")
     .delete()
     .eq("id", id)
-    .eq("organization_id", organizationId);
+    .eq("organization_id", organizationId)
+    .select("id");
 
-  return !error;
+  return !error && Boolean(data?.length);
 }
 

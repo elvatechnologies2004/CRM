@@ -1,6 +1,7 @@
 import type { CrmTask, CrmMeeting, CallRecord } from "@/lib/types";
 
 const TASKS_KEY = "finlonexa.tasks";
+const DELETED_TASKS_KEY = "finlonexa.deletedTasks";
 const MEETINGS_KEY = "finlonexa.meetings";
 const CALLS_KEY = "finlonexa.calls";
 
@@ -34,9 +35,34 @@ export function upsertTask(task: CrmTask): void {
   safeWrite(TASKS_KEY, next);
 }
 
+export function readDeletedTaskIds(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = window.localStorage.getItem(DELETED_TASKS_KEY);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw) as string[];
+    return new Set(Array.isArray(parsed) ? parsed : []);
+  } catch {
+    return new Set();
+  }
+}
+
+export function rememberDeletedTask(id: string): void {
+  const deleted = readDeletedTaskIds();
+  deleted.add(id);
+  safeWrite(DELETED_TASKS_KEY, [...deleted]);
+}
+
+export function clearDeletedTask(id: string): void {
+  const deleted = readDeletedTaskIds();
+  if (!deleted.delete(id)) return;
+  safeWrite(DELETED_TASKS_KEY, [...deleted]);
+}
+
 export function removeTask(id: string): void {
   const stored = readStoredTasks();
   safeWrite(TASKS_KEY, stored.filter((t) => t.id !== id));
+  rememberDeletedTask(id);
 }
 
 export function readStoredMeetings(): CrmMeeting[] {

@@ -26,22 +26,26 @@ export async function createQuoteAction(
     customerName: string;
     dealName?: string;
     total: number;
+    items?: CreateQuoteParams["items"];
   }
 ): Promise<QuoteActionResult> {
+  const items = Array.isArray(input.items) && input.items.length > 0
+    ? input.items
+    : input.total > 0
+      ? [
+          {
+            name_snapshot: input.dealName
+              ? `${input.dealName} — ${input.customerName}`
+              : input.customerName,
+            quantity: 1,
+            unit_price: input.total,
+          },
+        ]
+      : [];
+
   const result = await createQuote({
     ...input,
-    items:
-      input.total > 0
-        ? [
-            {
-              name_snapshot: input.dealName
-                ? `${input.dealName} — ${input.customerName}`
-                : input.customerName,
-              quantity: 1,
-              unit_price: input.total,
-            },
-          ]
-        : [],
+    items,
   });
 
   if (result.error || !result.quote) {

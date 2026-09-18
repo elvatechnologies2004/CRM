@@ -59,10 +59,10 @@ export function SignUpForm() {
       }
 
       if (data.session) {
-        // Email confirmation is disabled — session exists immediately.
-        await fetch("/api/auth/onboard", { method: "POST" }).catch(() => {});
+        // Email confirmation is disabled — session exists immediately. Run the
+        // workspace bootstrap in the background instead of blocking navigation.
+        void fetch("/api/auth/onboard", { method: "POST", cache: "no-store" }).catch(() => {});
         router.replace("/dashboard");
-        router.refresh();
       } else {
         setCheckEmail(true);
       }

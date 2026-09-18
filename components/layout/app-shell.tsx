@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { TopNavbar } from "@/components/layout/top-navbar";
@@ -39,6 +39,7 @@ const PLATFORM_ADMIN_PREFIX = "/admin";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = React.useState(false);
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
@@ -69,6 +70,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [mobileOpen]);
+
+  React.useEffect(() => {
+    const refreshOnVisible = () => {
+      if (document.visibilityState === "visible") {
+        router.refresh();
+      }
+    };
+
+    document.addEventListener("visibilitychange", refreshOnVisible);
+    window.addEventListener("focus", refreshOnVisible);
+
+    return () => {
+      document.removeEventListener("visibilitychange", refreshOnVisible);
+      window.removeEventListener("focus", refreshOnVisible);
+    };
+  }, [router]);
 
   React.useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
