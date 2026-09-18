@@ -82,10 +82,17 @@ export function getOrgIdOrThrow(organizationId: string | null): string {
  */
 export async function ensureOrgForWrite(supabase: DbClient): Promise<string> {
   // 1️⃣ First try to find an existing active organization for this user.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error("Not authenticated");
+  }
+
   const { data: members } = await supabase
     .from("organization_members")
     .select("organization_id")
-    .eq("user_id", (await supabase.auth.getUser()).data.user.id)
+    .eq("user_id", user.id)
     .maybeSingle();
 
   if (members?.organization_id) {
@@ -98,13 +105,14 @@ export async function ensureOrgForWrite(supabase: DbClient): Promise<string> {
   const existing = await getActiveOrgId(supabase);
   if (existing) return existing;
 
+  let created: string | null = null;
   try {
     const { ensureWorkspace } = await import("@/lib/crm/workspace");
-    await ensureWorkspace();
+    created = await ensureWorkspace();
   } catch {
     // ignore – the workspace may already exist under a different name
   }
 
   const { data } = await supabase.rpc("current_organization_id");
-  return getOrgIdOrThrow((data as string | null) ?? null);
+  return getOrgIdOrThrow((data as string | null) ?? created ?? null);
 }

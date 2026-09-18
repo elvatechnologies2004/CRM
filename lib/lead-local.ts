@@ -5,6 +5,25 @@ import type { LeadTask } from "@/lib/types";
 const STORAGE_KEY = "finlonexa.converted-deals";
 const TASKS_KEY = "finlonexa.lead-tasks";
 const DELETED_KEY = "finlonexa.deleted-leads";
+const LEAD_STATUS_KEY = "finlonexa.lead-status-overrides";
+
+export function readLeadStatusOverrides(): Record<string, import("@/lib/types").LeadStatus> {
+  if (typeof window === "undefined") {
+    return {};
+  }
+  try {
+    const raw = window.localStorage.getItem(LEAD_STATUS_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, import("@/lib/types").LeadStatus>) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function writeLeadStatusOverride(leadId: string, status: import("@/lib/types").LeadStatus) {
+  const all = readLeadStatusOverrides();
+  all[leadId] = status;
+  window.localStorage.setItem(LEAD_STATUS_KEY, JSON.stringify(all));
+}
 
 export function readDeletedLeadIds(): string[] {
   if (typeof window === "undefined") {

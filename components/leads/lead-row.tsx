@@ -185,7 +185,7 @@ function LeadRow({
             {!isConverted && (
               <DropdownMenuItem onClick={() => onConvert(lead)}>
                 <TrendingUp className="h-4 w-4" aria-hidden />
-                Convert to Deal
+                Convert to Opportunity
               </DropdownMenuItem>
             )}
             <DropdownMenuItem onClick={() => onAddTask(lead)}>

@@ -18,6 +18,8 @@ export interface EntitlementResult {
   limits: PlanLimits;
   /** null in mock mode / no subscription. */
   trialEndsAt: string | null;
+  /** Whole days remaining in the trial (0 when there is no trial). */
+  trialDaysLeft: number;
   status: "trialing" | "active" | "past_due" | "free" | "canceled";
   withinLimits: boolean;
   overLimitFields: Array<keyof PlanLimits>;
@@ -74,6 +76,15 @@ export async function getEntitlements(): Promise<EntitlementResult | null> {
 
   const usage = await collectUsage(orgId);
 
+  const trialDaysLeft = trialEndsAt
+    ? Math.max(
+        0,
+        Math.ceil(
+          (new Date(trialEndsAt).getTime() - Date.now()) / 86400000
+        )
+      )
+    : 0;
+
   // A subscription is within all limits when no field is over budget.
   const usageKeys = Object.keys(usage) as Array<keyof OrgUsage>;
   const overLimitFields = usageKeys.filter((key) => {
@@ -88,6 +99,7 @@ export async function getEntitlements(): Promise<EntitlementResult | null> {
     features: plan.entitlements,
     limits: plan.limits,
     trialEndsAt,
+    trialDaysLeft,
     status: subStatus,
     withinLimits: overLimitFields.length === 0,
     overLimitFields: overLimitFields as Array<keyof PlanLimits>,

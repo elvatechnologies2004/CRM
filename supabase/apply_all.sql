@@ -281,6 +281,9 @@ create table public.leads (
   converted_company_id  uuid,
   converted_deal_id     uuid,
   converted_at          timestamptz,
+  unqualified_reason    text,
+  unqualified_notes     text,
+  unqualified_at        timestamptz,
   created_by            uuid,
   created_at            timestamptz not null default now(),
   updated_at            timestamptz not null default now(),
@@ -1163,7 +1166,15 @@ begin
     nullif(trim(coalesce(p_first_name,'') || ' ' || coalesce(p_last_name,'')), ''),
     p_email,
     'active'
-  );
+  )
+  on conflict (id) do update set
+    organization_id = excluded.organization_id,
+    first_name      = coalesce(excluded.first_name, public.profiles.first_name),
+    last_name       = coalesce(excluded.last_name, public.profiles.last_name),
+    full_name       = coalesce(excluded.full_name, public.profiles.full_name),
+    email           = coalesce(excluded.email, public.profiles.email),
+    status          = 'active',
+    updated_at      = now();
 
   insert into public.roles (organization_id, name, description, is_system)
   values (v_org_id, 'Admin', 'Full access to the organization', true)

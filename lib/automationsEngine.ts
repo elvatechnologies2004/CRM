@@ -4,6 +4,7 @@ import "server-only";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getActiveOrgId } from "@/lib/crm/base";
+import type { DbClient } from "@/lib/crm/base";
 import type { CrmAutomation } from "@/lib/types";
 
 /**
@@ -64,7 +65,7 @@ async function triggerAutomation(
     recordId: string;
     organizationId: string;
   },
-  supabase: any,
+  supabase: DbClient,
   actorUserId: string,
 ) {
   // 1. Log the run start
@@ -136,9 +137,9 @@ async function triggerAutomation(
         actorUserId
       );
       results.push({ actionType: action.type, success: true, ...result });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(`Automation action ${action.type} error:`, err);
-      results.push({ actionType: action.type, success: false, error: err.message });
+      results.push({ actionType: action.type, success: false, error: (err as { message?: string }).message });
     }
   }
 
@@ -195,7 +196,7 @@ async function evaluateConditionsDB(
   conditions: Array<{ field: string; operator: string; value: string }>,
   recordType: "lead" | "deal" | "contact" | "task" | "invoice",
   recordId: string,
-  supabase: any,
+  supabase: DbClient,
 ): Promise<boolean> {
   // Fetch the relevant record data
   const fetchMap: Record<string, string> = {
@@ -286,7 +287,7 @@ async function executeActionSafe(
   recordType: "lead" | "deal" | "contact" | "task" | "invoice",
   recordId: string,
   organizationId: string,
-  supabase: any,
+  supabase: DbClient,
   actorUserId: string,
 ) {
   // config is optional; default to empty object
@@ -453,11 +454,9 @@ async function executeActionSafe(
     case "add_tag": {
       const tagName = config.tag_name ?? action.value;
 
-      let table: string;
-      if (recordType === "lead") table = "leads";
-      else if (recordType === "deal") table = "deals";
-      else if (recordType === "contact") table = "contacts";
-      else throw new Error(`Unsupported record type for add_tag: ${recordType}`);
+      if (recordType !== "lead" && recordType !== "deal" && recordType !== "contact") {
+        throw new Error(`Unsupported record type for add_tag: ${recordType}`);
+      }
 
       // Insert into record_tags junction table
       const { error } = await supabase

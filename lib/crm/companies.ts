@@ -4,7 +4,7 @@ import {
   getActiveOrgId,
   toIso,
   fetchOwnerIndex,
-  getOrgIdOrThrow,
+  ensureOrgForWrite,
   PAGE_SIZE,
 } from "@/lib/crm/base";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -158,7 +158,7 @@ export interface CompanyCreateInput {
 
 export async function createCompany(input: CompanyCreateInput): Promise<CompanyRecord | null> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = ensureOrgForWrite(supabase);
+  const organizationId = await ensureOrgForWrite(supabase);
   const { data: userData } = await supabase.auth.getUser();
 
   const { data } = await supabase
@@ -202,7 +202,7 @@ export interface CompanyUpdateInput extends Partial<CompanyCreateInput> {
 
 export async function updateCompany(input: CompanyUpdateInput): Promise<CompanyRecord | null> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = ensureOrgForWrite(supabase);
+  const organizationId = await ensureOrgForWrite(supabase);
 
   const patch: Record<string, unknown> = {
     updated_at: new Date().toISOString(),

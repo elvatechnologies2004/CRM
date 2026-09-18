@@ -2,6 +2,7 @@ import "server-only";
 
 import { can } from "@/lib/crm/context";
 import { getActiveOrgId } from "@/lib/crm/base";
+import type { DbClient } from "@/lib/crm/base";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { notifyUsers } from "@/lib/notifications";
 import { generateText } from "@/lib/ai/gemini";
@@ -38,7 +39,7 @@ import type {
 
 const MAX_DEPTH = 50;
 
-interface WorkflowRow {
+export interface WorkflowRow {
   id: string;
   organization_id: string;
   name: string;
@@ -50,6 +51,27 @@ interface WorkflowRow {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+}
+
+interface WorkflowRunRow {
+  id: string;
+  workflow_id: string;
+  workflow: { name: string | null } | null;
+  trigger_event: string;
+  subject_type: string | null;
+  subject_id: string | null;
+  status: WorkflowRunStatus;
+  node_path: string[] | null;
+  error_message: string | null;
+  started_at: string;
+  completed_at: string | null;
+}
+
+interface WorkflowRunStepRow {
+  node_id: string;
+  node_type: string;
+  status: string;
+  error_message: string | null;
 }
 
 interface RunContext {
@@ -159,7 +181,7 @@ export async function getWorkflowRuns(workflowId?: string, limit = 30): Promise<
   const { data } = await finalQuery;
 
   const views: WorkflowRunView[] = [];
-  for (const r of (data ?? []) as any[]) {
+  for (const r of (data ?? []) as WorkflowRunRow[]) {
     const { data: steps } = await supabase
       .from("workflow_run_steps")
       .select("node_id, node_type, status, error_message")
@@ -178,7 +200,7 @@ export async function getWorkflowRuns(workflowId?: string, limit = 30): Promise<
       error_message: r.error_message,
       started_at: r.started_at,
       completed_at: r.completed_at,
-      steps: (steps ?? []).map((s: any) => ({
+      steps: (steps ?? []).map((s: WorkflowRunStepRow) => ({
         node_id: s.node_id,
         node_type: s.node_type,
         status: s.status,
@@ -219,7 +241,7 @@ function templateString(input: string, ctx: RunContext): string {
 }
 
 async function recordStep(
-  supabase: any,
+  supabase: DbClient,
   organizationId: string,
   runId: string,
   node: WorkflowNode,
@@ -239,7 +261,7 @@ async function recordStep(
 }
 
 async function setRunStatus(
-  supabase: any,
+  supabase: DbClient,
   organizationId: string,
   runId: string,
   status: WorkflowRunStatus,
@@ -258,7 +280,7 @@ async function setRunStatus(
 // ------------------------------------------------------------------
 
 // 1) condition
-async function handleCondition(supabase: any, organizationId: string, ctx: RunContext, node: ConditionNode): Promise<string | null> {
+async function handleCondition(supabase: DbClient, organizationId: string, ctx: RunContext, node: ConditionNode): Promise<string | null> {
   const config = node.config;
   const actual = lookupField(ctx, config.field);
   const expected = config.value.trim().toLowerCase();
@@ -305,7 +327,7 @@ function lookupField(ctx: RunContext, field: string): string {
 
 // 2) action
 async function handleAction(
-  supabase: any,
+  supabase: DbClient,
   organizationId: string,
   ctx: RunContext,
   node: ActionNode,
@@ -541,7 +563,7 @@ async function handleAction(
 // ------------------------------------------------------------------
 
 async function executeBlock(
-  supabase: any,
+  supabase: DbClient,
   organizationId: string,
   ctx: RunContext,
   def: WorkflowDefinition,

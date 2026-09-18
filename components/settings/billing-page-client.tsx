@@ -33,6 +33,7 @@ interface BillingPageClientProps {
   plans: Plan[];
   subscription: SubscriptionRecord | null;
   entitlements: BillingEntitlements | null;
+  trialDaysLeft: number;
   stripeConfigured: boolean;
   error: string | null;
 }
@@ -67,16 +68,14 @@ function planAction(
   return { label: "Choose plan", disabled: false, tone: "default" };
 }
 
-function BillingPageClient({ plans, subscription, entitlements, stripeConfigured, error }: BillingPageClientProps) {
+function BillingPageClient({ plans, subscription, entitlements, trialDaysLeft, stripeConfigured, error }: BillingPageClientProps) {
   const router = useRouter();
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
   const [isPending, startTransition] = useTransition();
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
 
-  const daysLeft = entitlements?.trialEndsAt
-    ? Math.max(0, Math.ceil((new Date(entitlements.trialEndsAt).getTime() - Date.now()) / 86400000))
-    : 0;
+  const daysLeft = trialDaysLeft;
 
   async function runAction(key: string, fn: () => Promise<{ ok: boolean; url?: string; error?: string }>) {
     setActionError(null);

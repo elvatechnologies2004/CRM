@@ -20,9 +20,7 @@
 
 import "server-only";
 
-import { supabaseEnv } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
 
 interface WhatsAppMessage {
   id: string;
@@ -32,19 +30,17 @@ interface WhatsAppMessage {
   recipient: string;
   message_type: "text" | "image" | "document" | "audio" | "video" | "template";
   sent_at: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
  * Process WhatsApp conversation messages and generate AI insights.
  * 
  * @param messages - Array of WhatsApp messages in the conversation
- * @param organizationId - Organization ID for context
  * @returns Object containing all generated insights with evidence references
  */
 export async function analyzeWhatsAppConversation(
-  messages: WhatsAppMessage[],
-  organizationId: string
+  messages: WhatsAppMessage[]
 ): Promise<{
   conversation_summary: string;
   customer_intent: "low" | "medium" | "high" | "unknown";
@@ -68,7 +64,7 @@ export async function analyzeWhatsAppConversation(
   };
 }> {
   try {
-    const supa = createSupabaseServerClient();
+    createSupabaseServerClient();
 
     if (messages.length === 0) {
       return {
@@ -139,7 +135,7 @@ export async function analyzeWhatsAppConversation(
     // Common competitor names - in production this would be more comprehensive
     const competitorNames = ["competitor", "other company", "their solution", "alternative"];
     let competitor_mention: string | undefined;
-    let competitor_evidence: string[] = [];
+    const competitor_evidence: string[] = [];
     
     for (const comp of competitorNames) {
       if (fullTextLower.includes(comp)) {
@@ -235,12 +231,12 @@ export async function analyzeWhatsAppConversation(
       evidence: {
         summary_evidence: extractSummaryEvidence(messages, fullTextLower),
         intent_evidence: intentEvidence,
-        sentiment_evidence: [positiveCount, negativeCount].map(String).map(v => `Pos:${positiveCount} Neg:${negativeCount}`),
-        signal_evidence: [buyingSignalCount].map(String).map(v => `Signals:${buyingSignalCount}`),
+        sentiment_evidence: [positiveCount, negativeCount].map(String).map(() => `Pos:${positiveCount} Neg:${negativeCount}`),
+        signal_evidence: [buyingSignalCount].map(String).map(() => `Signals:${buyingSignalCount}`),
         objection_evidence,
         competitor_evidence,
-        urgency_evidence: [foundUrgency.length].map(String).map(v => `Urgency:${foundUrgency.length}`),
-        risk_evidence: [foundRisk.length].map(String).map(v => `Risks:${foundRisk.length}`),
+        urgency_evidence: [foundUrgency.length].map(String).map(() => `Urgency:${foundUrgency.length}`),
+        risk_evidence: [foundRisk.length].map(String).map(() => `Risks:${foundRisk.length}`),
       },
     };
   } catch (error) {

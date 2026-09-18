@@ -106,9 +106,7 @@ function LeadsTable({
                 <SelectValue placeholder="Set status" />
               </SelectTrigger>
               <SelectContent>
-                {(
-                  ["New", "Contacted", "Qualified", "Proposal", "Unqualified"] as const
-                ).map((status) => (
+                {(["New", "Contacted", "Qualified", "Unqualified"] as const).map((status) => (
                   <SelectItem key={status} value={status}>
                     {status}
                   </SelectItem>

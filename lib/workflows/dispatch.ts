@@ -3,6 +3,7 @@ import "server-only";
 import { getActiveOrgId } from "@/lib/crm/base";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { startWorkflowRun } from "@/lib/workflows/engine";
+import type { WorkflowRow } from "@/lib/workflows/engine";
 import type { WorkflowEvent } from "./types";
 
 /**
@@ -32,7 +33,7 @@ export async function dispatchWorkflowEvent(event: WorkflowEvent["type"], payloa
       .eq("status", "active")
       .eq("trigger_type", event);
 
-    for (const w of (workflows ?? []) as any[]) {
+    for (const w of (workflows ?? []) as WorkflowRow[]) {
       await startWorkflowRun(w, {
         type: event,
         subjectType,

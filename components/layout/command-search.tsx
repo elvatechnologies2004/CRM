@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 
 const suggestions = [
   { type: "leads", label: "show my hot leads" },
-  { type: "deals", label: "deals closing this month" },
+  { type: "opportunities", label: "opportunities closing this month" },
   { type: "tasks", label: "my tasks for today" },
 ];
 
@@ -106,7 +106,7 @@ function CommandSearch() {
         className="group hidden h-9 w-full max-w-md items-center gap-2 rounded-lg border border-input bg-card px-3 text-sm text-muted-foreground shadow-[0_1px_2px_0_rgba(15,23,42,0.03)] transition-colors hover:border-ring/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 md:flex"
       >
         <Search className="h-4 w-4 shrink-0" aria-hidden />
-        <span className="truncate">Search leads, contacts, deals...</span>
+        <span className="truncate">Search leads, contacts, opportunities...</span>
         <kbd className="ml-auto hidden shrink-0 items-center gap-0.5 rounded border border-border bg-muted px-1.5 py-0.5 font-sans text-[10px] font-medium text-muted-foreground sm:inline-flex">
           Ctrl K
         </kbd>
@@ -133,7 +133,7 @@ function CommandSearch() {
           <DialogHeader className="sr-only">
             <DialogTitle>Global search</DialogTitle>
             <DialogDescription>
-              Search across leads, contacts, deals and documents.
+              Search across leads, contacts, opportunities and documents.
             </DialogDescription>
           </DialogHeader>
           <div className="flex items-center gap-3 border-b border-border px-4">

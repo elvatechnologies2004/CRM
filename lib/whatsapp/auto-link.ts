@@ -10,7 +10,11 @@
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-let supa: any = null;
+type ContactMatch = { contact?: unknown };
+type LeadMatch = { lead?: unknown };
+type CompanyMatch = { company?: unknown };
+
+let supa: Awaited<ReturnType<typeof createSupabaseServerClient>> | null = null;
 
 async function getSupabase() {
   if (!supa) {
@@ -121,7 +125,7 @@ export async function autoLinkWhatsAppConversation(
   organizationId: string,
   phoneNumber: string
 ) {
-  const supa = await getSupabase();
+  await getSupabase();
 
   // Search in priority order: Contact > Lead > Company
   const { contact, error: contactErr } = await findContactByPhone(
@@ -129,8 +133,8 @@ export async function autoLinkWhatsAppConversation(
     phoneNumber
   );
 
-  if (contact && contact.contact) {
-    return { type: "contact", record: contact.contact, match: true };
+  if (contact && (contact as ContactMatch).contact) {
+    return { type: "contact", record: (contact as ContactMatch).contact, match: true };
   }
 
   const { lead, error: leadErr } = await findLeadByPhone(
@@ -138,8 +142,8 @@ export async function autoLinkWhatsAppConversation(
     phoneNumber
   );
 
-  if (lead && lead.lead) {
-    return { type: "lead", record: lead.lead, match: true };
+  if (lead && (lead as LeadMatch).lead) {
+    return { type: "lead", record: (lead as LeadMatch).lead, match: true };
   }
 
   const { company, error: companyErr } = await findCompanyByPhone(
@@ -147,8 +151,8 @@ export async function autoLinkWhatsAppConversation(
     phoneNumber
   );
 
-  if (company && company.company) {
-    return { type: "company", record: company.company, match: true };
+  if (company && (company as CompanyMatch).company) {
+    return { type: "company", record: (company as CompanyMatch).company, match: true };
   }
 
   return { type: null, record: null, match: false, contactErr, leadErr, companyErr };

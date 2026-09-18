@@ -124,9 +124,11 @@ function CompaniesPageClient({
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  useEffect(() => {
+  const [syncedCompanies, setSyncedCompanies] = useState(initialCompanies);
+  if (initialCompanies !== syncedCompanies) {
+    setSyncedCompanies(initialCompanies);
     setCompanies(initialCompanies);
-  }, [initialCompanies]);
+  }
 
   const ownerNames = useMemo(() => owners.map((owner) => owner.name), [owners]);
 

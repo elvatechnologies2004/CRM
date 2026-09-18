@@ -7,7 +7,7 @@
 import "server-only";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getActiveOrgId } from "@/lib/crm/base";
+import { getActiveOrgId, type DbClient } from "@/lib/crm/base";
 import { generateAICompletion } from "@/lib/ai/provider";
 
 export interface AIAssistantRequest {
@@ -64,7 +64,7 @@ export async function askAIAssistant(
  */
 async function gatherCRMContext(
   query: string,
-  supabase: any,
+  supabase: DbClient,
   orgId: string
 ): Promise<Record<string, unknown>> {
   const lowerQuery = query.toLowerCase();

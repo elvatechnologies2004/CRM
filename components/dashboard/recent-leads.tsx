@@ -2,13 +2,17 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useState } from "react";
 import {
   ArrowUpRight,
   Globe,
   Link as LinkIcon,
   MessageCircle,
+  Trash2,
   UserPlus,
 } from "lucide-react";
+
+import { deleteLeadAction } from "@/app/leads/actions";
 
 import { InitialsAvatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -44,9 +48,30 @@ interface RecentLeadsProps {
 
 function RecentLeads({ leads, leadHrefs }: RecentLeadsProps) {
   const router = useRouter();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [visibleLeads, setVisibleLeads] = useState<Lead[]>(leads);
 
   const openLead = (lead: Lead) => {
     router.push(leadHrefs?.[lead.name.toLowerCase()] ?? "/leads");
+  };
+
+  const handleDelete = async (lead: Lead) => {
+    const confirmed = window.confirm(`Delete ${lead.name} from recent leads?`);
+    if (!confirmed) return;
+
+    setVisibleLeads((current) => current.filter((item) => item.id !== lead.id));
+    setDeletingId(lead.id);
+
+    const result = await deleteLeadAction(lead.id);
+    setDeletingId(null);
+
+    if (!result.ok) {
+      setVisibleLeads(leads);
+      window.alert(result.error ?? "Failed to delete lead");
+      return;
+    }
+
+    router.refresh();
   };
 
   return (
@@ -74,7 +99,7 @@ function RecentLeads({ leads, leadHrefs }: RecentLeadsProps) {
               </tr>
             </thead>
             <tbody>
-              {leads.map((lead) => {
+              {visibleLeads.map((lead) => {
                 const level = getScoreLevel(lead.score);
                 return (
                   <tr
@@ -123,7 +148,21 @@ function RecentLeads({ leads, leadHrefs }: RecentLeadsProps) {
                       </Badge>
                     </td>
                     <td className="px-3 py-3 text-right text-[13px] text-muted-foreground">
-                      {lead.time}
+                      <div className="flex items-center justify-end gap-2">
+                        <span>{lead.time}</span>
+                        <button
+                          type="button"
+                          aria-label={`Delete ${lead.name}`}
+                          disabled={deletingId === lead.id}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void handleDelete(lead);
+                          }}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/5 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );

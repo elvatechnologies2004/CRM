@@ -2,6 +2,7 @@ import "server-only";
 
 import { can } from "@/lib/crm/context";
 import { getActiveOrgId } from "@/lib/crm/base";
+import type { DbClient } from "@/lib/crm/base";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { notifyUsers } from "@/lib/notifications";
 
@@ -97,6 +98,37 @@ export interface ApprovalRequestView {
   actions: ApprovalActionView[];
 }
 
+interface ApprovalRequestRow {
+  id: string;
+  policy_id: string | null;
+  subject: string;
+  subject_id: string | null;
+  subject_summary: string | null;
+  payload: Record<string, unknown> | null;
+  requested_by: string;
+  status: "pending" | "approved" | "rejected" | "cancelled" | "expired";
+  current_step: number;
+  priority: number;
+  expires_at: string | null;
+  decided_by: string | null;
+  decided_at: string | null;
+  created_at: string;
+  workflow_run_id: string | null;
+}
+
+interface ApprovalStepRow {
+  id: string;
+  request_id: string;
+  step_number: number;
+  approver_type: "user" | "role";
+  approver_user_id: string | null;
+  approver_role_key: string | null;
+  status: string;
+  decided_by: string | null;
+  decided_at: string | null;
+  comment: string | null;
+}
+
 // ------------------------------------------------------------------
 // Resume-handler registration (breaks the approvals <-> workflows
 // import cycle; the workflows engine registers at load time).
@@ -133,7 +165,7 @@ export async function getApprovalPolicies(): Promise<ApprovalPolicyRecord[] | nu
     .select("*")
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
-  return (data ?? []).map((p: any) => ({
+  return (data ?? []).map((p: ApprovalPolicyRecord) => ({
     id: p.id,
     name: p.name,
     description: p.description,
@@ -237,8 +269,8 @@ export async function deleteApprovalPolicy(id: string): Promise<boolean> {
 // ------------------------------------------------------------------
 
 async function buildViews(
-  supabase: any,
-  rows: any[],
+  supabase: DbClient,
+  rows: ApprovalRequestRow[],
   actorUserId: string | undefined,
   organizationId: string,
 ): Promise<ApprovalRequestView[]> {
@@ -321,7 +353,7 @@ async function buildViews(
   }));
 }
 
-async function actor(supabase: any): Promise<{ userId?: string; isManager: boolean }> {
+async function actor(supabase: DbClient): Promise<{ userId?: string; isManager: boolean }> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -452,7 +484,7 @@ export interface CreateApprovalInput {
 }
 
 async function resolveApproverUsers(
-  supabase: any,
+  supabase: DbClient,
   organizationId: string,
   config: { approver_user_ids?: string[]; roles?: string[] },
 ): Promise<string[]> {
@@ -476,7 +508,7 @@ async function resolveApproverUsers(
 }
 
 /** Shape a policy row into the typed record. */
-function toPolicyRecord(p: any): ApprovalPolicyRecord {
+function toPolicyRecord(p: ApprovalPolicyRecord): ApprovalPolicyRecord {
   return {
     id: p.id,
     name: p.name,
@@ -659,7 +691,7 @@ type DecisionResult =
 
 function updateStepsForType(
   stepRows: ApprovalStepView[],
-  request: any,
+  request: ApprovalRequestRow,
   type: ApprovalType,
   minApprovals: number,
   decided: { step: ApprovalStepView; outcome: "approved" | "rejected" },
@@ -727,7 +759,7 @@ export async function decideApproval(
     .order("step_number");
 
   const actionable = (steps ?? []).filter(
-    (s: any) =>
+    (s: ApprovalStepRow) =>
       s.status === "pending" &&
       (isManager || s.approver_user_id === userId),
   );
@@ -758,7 +790,7 @@ export async function decideApproval(
     .eq("organization_id", organizationId)
     .order("step_number");
 
-  const stepViews = (refreshed.data ?? []).map((s: any) => ({
+  const stepViews = (refreshed.data ?? []).map((s: ApprovalStepRow) => ({
     id: s.id,
     step_number: s.step_number,
     approver_type: s.approver_type as "user" | "role",
@@ -774,8 +806,8 @@ export async function decideApproval(
 
   if (type === "sequential") {
     const waiting = (refreshed.data ?? [])
-      .filter((s: any) => s.status === "waiting")
-      .sort((a: any, b: any) => a.step_number - b.step_number);
+      .filter((s: ApprovalStepRow) => s.status === "waiting")
+      .sort((a: ApprovalStepRow, b: ApprovalStepRow) => a.step_number - b.step_number);
     if (outcome === "approved" && waiting.length > 0) {
       await supabase
         .from("approval_steps")

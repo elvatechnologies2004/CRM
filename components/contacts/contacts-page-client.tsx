@@ -119,9 +119,11 @@ function ContactsPageClient({
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  useEffect(() => {
+  const [syncedContacts, setSyncedContacts] = useState(initialContacts);
+  if (initialContacts !== syncedContacts) {
+    setSyncedContacts(initialContacts);
     setContacts(initialContacts);
-  }, [initialContacts]);
+  }
 
   const ownerNames = useMemo(() => owners.map((owner) => owner.name), [owners]);
   const companyNames = useMemo(

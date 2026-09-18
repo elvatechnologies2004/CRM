@@ -43,7 +43,6 @@ const leadStatuses: LeadStatus[] = [
   "New",
   "Contacted",
   "Qualified",
-  "Proposal",
   "Unqualified",
 ];
 

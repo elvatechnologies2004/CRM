@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     template: "%s | FinloNexa CRM",
   },
   description:
-    "AI-first CRM for modern sales teams. Manage leads, deals, pipeline and revenue in one place.",
+    "AI-first CRM for modern sales teams. Manage leads, opportunities, pipeline and revenue in one place.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

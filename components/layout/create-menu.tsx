@@ -26,7 +26,7 @@ const createOptions = [
   { label: "New Lead", href: "/leads", icon: UserPlus, shortcut: "L" },
   { label: "New Contact", href: "/contacts", icon: ContactRound, shortcut: "C" },
   { label: "New Company", href: "/companies", icon: Building2, shortcut: "⇧C" },
-  { label: "New Deal", href: "/deals", icon: Handshake, shortcut: "D" },
+  { label: "New Opportunity", href: "/opportunities", icon: Handshake, shortcut: "D" },
   { label: "New Task", href: "/tasks", icon: FileType, shortcut: "T" },
   { label: "New Quote", href: "/quotes", icon: FileType, shortcut: "Q" },
 ];

@@ -16,8 +16,8 @@ import { MarketingHeader, MarketingFooter } from "@/components/marketing/site-sh
 
 const FEATURES: Array<{ icon: LucideIcon; title: string; desc: string }> = [
   { icon: Kanban, title: "Sales Pipeline", desc: "Visual kanban pipelines with stages, win probability and in-line updates." },
-  { icon: Workflow, title: "Automations", desc: "Trigger-based workflows across leads, deals, tasks and email." },
-  { icon: Bot, title: "AI Assistant", desc: "Lead scoring, deal health, next best action and summaries backed by AI." },
+  { icon: Workflow, title: "Automations", desc: "Trigger-based workflows across leads, opportunities, tasks and email." },
+  { icon: Bot, title: "AI Assistant", desc: "Lead scoring, opportunity health, next best action and summaries backed by AI." },
   { icon: Mail, title: "Communication", desc: "Inbox, sequences and WhatsApp from one workspace." },
   { icon: BarChart3, title: "Reports & Forecast", desc: "Pipeline, revenue and goal tracking dashboards." },
   { icon: Sparkles, title: "Human-controlled AI", desc: "AI proposes, permissions approve. You stay in control." },
@@ -25,7 +25,7 @@ const FEATURES: Array<{ icon: LucideIcon; title: string; desc: string }> = [
 
 const STEPS: Array<{ title: string; desc: string }> = [
   { title: "Create your workspace", desc: "Sign up in seconds — no credit card required for the 14-day trial." },
-  { title: "Add leads & deals", desc: "Import contacts or let AI lift the heavy admin." },
+  { title: "Add leads & opportunities", desc: "Import contacts or let AI lift the heavy admin." },
   { title: "Automate & grow", desc: "Build automations and let the pipeline run itself." },
 ];
 
@@ -71,8 +71,8 @@ export default function MarketingHome() {
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <div className="grid grid-cols-2 gap-6 text-center md:grid-cols-4">
               {[
-                ["Faster pipeline", "Move deals with less admin"],
-                ["AI-assisted selling", "Score and recover deals automatically"],
+                ["Faster pipeline", "Move opportunities with less admin"],
+                ["AI-assisted selling", "Score and recover opportunities automatically"],
                 ["Automation first", "Run workflows on every trigger"],
                 ["Built for teams", "Roles, permissions and audit trails"],
               ].map(([title, desc]) => (
@@ -91,7 +91,7 @@ export default function MarketingHome() {
             Everything you need to sell
           </h2>
           <p className="mt-2 max-w-2xl text-muted-foreground">
-            A full CRM — leads, deals, tasks, communication, automation, AI, revenue and reporting.
+            A full CRM — leads, opportunities, tasks, communication, automation, AI, revenue and reporting.
           </p>
           <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map(({ icon: Icon, title, desc }) => (
@@ -154,7 +154,7 @@ export default function MarketingHome() {
         <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
           <div className="rounded-2xl border border-border bg-gradient-to-br from-brand-blue/10 to-brand-purple/10 p-10 text-center">
             <h2 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
-              Ready to close more deals?
+              Ready to close more opportunities?
             </h2>
             <p className="mx-auto mt-2 max-w-xl text-muted-foreground">
               Join thousands of teams running their sales on FinloNexa CRM. Start free, upgrade when you grow.

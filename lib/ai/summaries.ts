@@ -5,8 +5,6 @@
 
 import "server-only";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getActiveOrgId } from "@/lib/crm/base";
 import { generateStructuredOutput } from "@/lib/ai/provider";
 import {
   buildCompanySummaryPrompt,
@@ -74,7 +72,7 @@ export async function summarizeRecord(
     (parsed) => {
       if (typeof parsed === "string") return parsed;
       if (typeof parsed === "object" && parsed !== null && "summary" in parsed) {
-        return String((parsed as any).summary);
+        return String((parsed as { summary?: unknown }).summary);
       }
       return JSON.stringify(parsed);
     }

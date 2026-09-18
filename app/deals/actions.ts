@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { createDeal, updateDeal } from "@/lib/crm/deals";
+import { createDeal, deleteDeal, updateDeal } from "@/lib/crm/deals";
 import type { DealRecord } from "@/lib/types";
 
 export interface DealActionResult {
@@ -61,4 +61,16 @@ export async function updateDealAction(input: {
   revalidatePath("/deals");
   revalidatePath(`/deals/${input.id}`);
   return { deal, error: null };
+}
+
+export async function deleteDealAction(id: string): Promise<{ ok: boolean; error: string | null }> {
+  const ok = await deleteDeal(id);
+  if (!ok) {
+    return { ok: false, error: "Failed to delete deal" };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/deals");
+  revalidatePath(`/deals/${id}`);
+  return { ok: true, error: null };
 }

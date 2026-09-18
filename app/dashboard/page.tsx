@@ -1,3 +1,4 @@
+import dynamic from "next/dynamic";
 import {
   BadgeCheck,
   DollarSign,
@@ -5,17 +6,14 @@ import {
   Users,
 } from "lucide-react";
 
-import { AIAssistant } from "@/components/dashboard/ai-assistant";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { DashboardTabs } from "@/components/dashboard/dashboard-tabs";
 import { DealRisks } from "@/components/dashboard/deal-risks";
 import { MeetingsCard } from "@/components/dashboard/meetings-card";
 import { RecentLeads } from "@/components/dashboard/recent-leads";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { TeamPerformance } from "@/components/dashboard/team-performance";
 import { UpcomingTasks } from "@/components/dashboard/upcoming-tasks";
-import { DealsStageChart } from "@/components/charts/deals-stage-chart";
-import { RevenueChart } from "@/components/charts/revenue-chart";
-import { SalesPerformance } from "@/components/charts/sales-performance";
 import { getDashboardData } from "@/lib/crm/dashboard";
 import { getActivation } from "@/lib/onboarding";
 import { TrialBanner } from "@/components/onboarding/trial-banner";
@@ -30,12 +28,42 @@ import {
 } from "@/lib/mock-data";
 import { leadMocks } from "@/lib/mock-leads";
 
+const DealsStageChart = dynamic(
+  () => import("@/components/charts/deals-stage-chart").then((mod) => mod.DealsStageChart),
+  {
+    loading: () => <div className="h-[280px] animate-pulse rounded-2xl border border-border bg-card/80" />,
+  },
+);
+
+const RevenueChart = dynamic(
+  () => import("@/components/charts/revenue-chart").then((mod) => mod.RevenueChart),
+  {
+    loading: () => <div className="h-[280px] animate-pulse rounded-2xl border border-border bg-card/80" />,
+  },
+);
+
+const SalesPerformance = dynamic(
+  () => import("@/components/charts/sales-performance").then((mod) => mod.SalesPerformance),
+  {
+    loading: () => <div className="h-[280px] animate-pulse rounded-2xl border border-border bg-card/80" />,
+  },
+);
+
+const AIAssistant = dynamic(
+  () => import("@/components/dashboard/ai-assistant").then((mod) => mod.AIAssistant),
+  {
+    loading: () => <div className="h-[280px] animate-pulse rounded-2xl border border-border bg-card/80" />,
+  },
+);
+
 const kpiIcons = [
   { icon: Users, tone: "indigo" as const },
   { icon: Handshake, tone: "blue" as const },
   { icon: DollarSign, tone: "purple" as const },
   { icon: BadgeCheck, tone: "green" as const },
 ];
+
+export const revalidate = 3;
 
 const leadHrefByCompany: Record<string, string> = {};
 const leadHrefByName: Record<string, string> = {};
@@ -50,10 +78,10 @@ export default async function DashboardPage() {
   const activation = await getActivation();
   const stageData = dashboard?.dealsByStage;
   const revenueData = dashboard?.revenue;
-  const leads = dashboard?.recentLeads && dashboard.recentLeads.length > 0 ? dashboard.recentLeads : recentLeads;
-  const tasks = dashboard?.upcomingTasks && dashboard.upcomingTasks.length > 0 ? dashboard.upcomingTasks : upcomingTasks;
-  const meetings = dashboard?.todayMeetings && dashboard.todayMeetings.length > 0 ? dashboard.todayMeetings : todayMeetings;
-  const risks = dashboard?.dealRisks && dashboard.dealRisks.length > 0 ? dashboard.dealRisks : dealRisks;
+  const leads = dashboard ? dashboard.recentLeads : recentLeads;
+  const tasks = dashboard ? dashboard.upcomingTasks : upcomingTasks;
+  const meetings = dashboard ? dashboard.todayMeetings : todayMeetings;
+  const risks = dashboard ? dashboard.dealRisks : dealRisks;
 
   const realLeadHrefByName = (dashboard?.recentLeads ?? []).reduce<Record<string, string>>((acc, lead) => {
     acc[lead.name.toLowerCase()] = `/leads/${lead.id}`;
@@ -71,6 +99,9 @@ export default async function DashboardPage() {
     <div className="mx-auto flex max-w-[1600px] flex-col gap-5 pb-10">
       <TrialBanner />
       <DashboardHeader />
+      <div className="flex justify-start">
+        <DashboardTabs />
+      </div>
 
       <section
         aria-label="Key metrics"

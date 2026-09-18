@@ -34,6 +34,7 @@ export default async function BillingPage() {
             }
           : null
       }
+      trialDaysLeft={entitlements?.trialDaysLeft ?? 0}
       stripeConfigured={isStripeConfigured()}
       error={subResult.error}
     />

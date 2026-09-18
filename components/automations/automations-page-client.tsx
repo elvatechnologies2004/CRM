@@ -109,12 +109,6 @@ function AutomationsPageClient({ initialAutomations }: AutomationsPageClientProp
   const [editingId, setEditingId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | AutomationStatus>("all");
   const [draft, setDraft] = useState<CrmAutomation | null>(null);
-  const [testMode, setTestMode] = useState(false);
-  const [testRecord, setTestRecord] = useState<{ type: string; id: string } | null>(null);
-  const [testResults, setTestResults] = useState<{
-    conditionsPassed: boolean;
-    actions: Array<{ type: string; wouldExecute: boolean; description: string }>;
-  } | null>(null);
 
   // Fetch real automations from Supabase on mount
   useEffect(() => {
@@ -128,20 +122,6 @@ function AutomationsPageClient({ initialAutomations }: AutomationsPageClientProp
       setLoading(false);
     });
   }, [initialAutomations]);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = window.setTimeout(() => setToast(null), 2400);
-    return () => window.clearTimeout(timer);
-  }, [toast]);
-
-  // Initialize test mode state from localStorage if enabled
-  useEffect(() => {
-    const stored = localStorage.getItem("automation_test_mode");
-    if (stored === "true") {
-      setTestMode(true);
-    }
-  }, []);
 
   useEffect(() => {
     if (!toast) return;

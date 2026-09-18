@@ -37,6 +37,7 @@ import {
   writeConvertedDeal,
   writePersistedTask,
 } from "@/lib/lead-local";
+import { convertLeadAction, deleteLeadAction, updateLeadAction } from "@/app/leads/actions";
 import { useCurrentUser } from "@/lib/current-user";
 import type {
   AuthorityLevel,
@@ -166,8 +167,40 @@ function LeadDetailView({
     return () => window.clearTimeout(id);
   }, [initialLead, initialTasks]);
 
-  const updateLead = (patch: Partial<LeadRecord>) =>
-    setLead((prev) => ({ ...prev, ...patch }));
+  const updateLead = async (patch: Partial<LeadRecord>) => {
+    const current = lead;
+    const owner = patch.ownerName
+      ? owners.find((candidate) => candidate.name === patch.ownerName)
+      : owners.find((candidate) => candidate.name === current.ownerName);
+
+    const payload = {
+      id: current.id,
+      firstName: patch.firstName ?? current.firstName,
+      lastName: patch.lastName ?? current.lastName,
+      email: patch.email ?? current.email,
+      phone: patch.phone ?? current.phone,
+      whatsapp: patch.whatsapp ?? current.whatsapp,
+      companyName: patch.companyName ?? current.companyName,
+      jobTitle: patch.jobTitle ?? current.jobTitle,
+      country: patch.country ?? current.country,
+      city: patch.city ?? current.city,
+      source: patch.source ?? current.source,
+      status: patch.status ?? current.status,
+      expectedValue: patch.expectedValue !== undefined ? String(patch.expectedValue) : current.expectedValue ? String(current.expectedValue) : "",
+      interest: patch.interest ?? current.interest,
+      tags: patch.tags ? patch.tags.join(", ") : current.tags.join(", "),
+      notes: "",
+      ownerId: owner?.id,
+    };
+
+    const result = await updateLeadAction(payload);
+    if (!result.lead) {
+      setLead((prev) => ({ ...prev, ...patch }));
+      return;
+    }
+
+    setLead(result.lead);
+  };
 
   const updateQualification = (
     patch: Partial<Omit<LeadRecord["qualification"], "score">>
@@ -194,9 +227,16 @@ function LeadDetailView({
     setEditOpen(false);
   };
 
-  const handleConvert = (_lead: LeadRecord, dealId: string) => {
-    writeConvertedDeal(initialLead.id, dealId);
-    setConvertedDealId(dealId);
+  const handleConvert = async (lead: LeadRecord): Promise<string | null> => {
+    const result = await convertLeadAction(lead.id);
+    if (result.error || !result.dealId) {
+      return null;
+    }
+
+    writeConvertedDeal(lead.id, result.dealId);
+    setConvertedDealId(result.dealId);
+    router.push(`/deals/${result.dealId}`);
+    return result.dealId;
   };
 
   const handleTaskSubmit = (task: NewTaskData) => {
@@ -293,7 +333,13 @@ function LeadDetailView({
     setFiles((prev) => prev.filter((file) => file.id !== id));
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
+    const result = await deleteLeadAction(initialLead.id);
+    if (!result.ok) {
+      window.alert(result.error || "Failed to delete lead");
+      return;
+    }
+
     markLeadDeleted(initialLead.id);
     router.push("/leads");
   };

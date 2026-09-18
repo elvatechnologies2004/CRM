@@ -1,6 +1,6 @@
 ﻿import "server-only";
 
-import { getActiveOrgId, toIso, buildFullName, uuidOrNull, fetchOwnerIndex, getOrgIdOrThrow, ensureOrgForWrite, PAGE_SIZE } from "@/lib/crm/base";
+import { getActiveOrgId, toIso, buildFullName, uuidOrNull, fetchOwnerIndex, ensureOrgForWrite, PAGE_SIZE } from "@/lib/crm/base";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
 import { autoRouteLead, type RouterLead } from "@/lib/routing/routing";
@@ -202,7 +202,7 @@ export interface LeadCreateInput {
 
 export async function createLead(input: LeadCreateInput): Promise<LeadRecord | null> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = ensureOrgForWrite(supabase);
+  const organizationId = await ensureOrgForWrite(supabase);
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -287,11 +287,13 @@ export async function createLead(input: LeadCreateInput): Promise<LeadRecord | n
 export interface LeadUpdateInput extends Partial<LeadCreateInput> {
   id: string;
   score?: number;
+  unqualifiedReason?: string;
+  unqualifiedNotes?: string;
 }
 
 export async function updateLead(input: LeadUpdateInput): Promise<LeadRecord | null> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = ensureOrgForWrite(supabase);
+  const organizationId = await ensureOrgForWrite(supabase);
 
   const patch: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
@@ -320,6 +322,17 @@ export async function updateLead(input: LeadUpdateInput): Promise<LeadRecord | n
   if (input.interest !== undefined) patch.interested_product = input.interest || null;
   if (input.tags !== undefined) patch.tags = input.tags;
   if (input.description !== undefined) patch.description = input.description || null;
+  if (input.unqualifiedReason !== undefined && input.unqualifiedReason !== null) {
+    patch.unqualified_reason = input.unqualifiedReason || null;
+    patch.unqualified_at = input.unqualifiedReason ? new Date().toISOString() : null;
+  }
+  if (input.unqualifiedNotes !== undefined && input.unqualifiedNotes !== null) {
+    patch.unqualified_notes = input.unqualifiedNotes || null;
+  }
+  if (input.status === "Unqualified" && !input.unqualifiedReason && input.unqualifiedReason !== undefined) {
+    patch.unqualified_reason = null;
+    patch.unqualified_at = null;
+  }
 
   const { data } = await supabase
     .from("leads")
@@ -341,7 +354,7 @@ export async function updateLead(input: LeadUpdateInput): Promise<LeadRecord | n
 /** Soft-delete (archive) a lead (Step 71). */
 export async function archiveLead(id: string): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = ensureOrgForWrite(supabase);
+  const organizationId = await ensureOrgForWrite(supabase);
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -355,12 +368,26 @@ export async function archiveLead(id: string): Promise<boolean> {
   return !error;
 }
 
+/** Permanently remove a lead record from the current organization. */
+export async function deleteLead(id: string): Promise<boolean> {
+  const supabase = await createSupabaseServerClient();
+  const organizationId = await ensureOrgForWrite(supabase);
+
+  const { error } = await supabase
+    .from("leads")
+    .delete()
+    .eq("id", id)
+    .eq("organization_id", organizationId);
+
+  return !error;
+}
+
 /** Convert a lead to a deal via the transactional RPC (Steps 52/57). */
 export async function convertLead(id: string): Promise<string | null> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = ensureOrgForWrite(supabase);
+  await ensureOrgForWrite(supabase);
 
-  const { data, error } = await supabase.rpc("convert_lead", { p_lead_id: id });
+  const { data, error } = await supabase.rpc("convert_lead", { p_lead_id: id });;
   if (error) {
     console.error("[leads] convert failed", error.message);
     return null;
@@ -405,7 +432,7 @@ export async function getLeadNotes(leadId: string): Promise<LeadNote[]> {
 
 export async function addLeadNote(leadId: string, body: string): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = ensureOrgForWrite(supabase);
+  const organizationId = await ensureOrgForWrite(supabase);
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -463,6 +490,7 @@ function mapActivityType(type: string): LeadActivity["type"] {
     task_completed: "task-completed",
     task_created: "task-completed",
     deal_stage_changed: "status-change",
+    lead_stage_changed: "status-change",
     quote_created: "quote",
     deal_created: "created",
     lead_converted: "status-change",

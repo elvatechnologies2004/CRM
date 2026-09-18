@@ -3,7 +3,7 @@
 import "server-only";
 
 import { createSupabaseServerClient } from "./server";
-import { supabaseEnv } from "@/lib/env";
+import type { CrmAutomation } from "@/lib/types";
 
 /**
  * Fetch all automations for the current organization.
@@ -41,7 +41,7 @@ export async function fetchAutomations() {
     return { automations: [], error: error.message };
   }
 
-  return { automations: data as any, error: null };
+  return { automations: data as CrmAutomation[], error: null };
 }
 
 /**

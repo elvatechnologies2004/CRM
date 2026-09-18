@@ -135,7 +135,7 @@ function LeadProfileHeader({
               {!isConverted && (
                 <Button onClick={onConvert} className="flex-1 lg:flex-none">
                   <TrendingUp className="h-4 w-4" aria-hidden />
-                  Convert to Deal
+                  Convert to Opportunity
                 </Button>
               )}
               <DropdownMenu>

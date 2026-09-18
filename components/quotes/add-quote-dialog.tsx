@@ -24,6 +24,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { quoteStatuses } from "@/lib/mock-quotes";
 import type { QuoteStatus } from "@/lib/types";
 
+export interface QuoteFormInit {
+  customerName?: string;
+  dealName?: string;
+  total?: string;
+  status?: QuoteStatus;
+  issueDate?: string;
+  expiryDate?: string;
+  notes?: string;
+}
+
 interface AddQuoteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -38,6 +48,11 @@ interface AddQuoteDialogProps {
   }) => void;
   nextNumber: string;
   busy?: boolean;
+  initial?: QuoteFormInit | null;
+}
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
 }
 
 function AddQuoteDialog({
@@ -46,16 +61,29 @@ function AddQuoteDialog({
   onSubmit,
   nextNumber,
   busy = false,
+  initial = null,
 }: AddQuoteDialogProps) {
   const [customerName, setCustomerName] = useState("");
   const [dealName, setDealName] = useState("");
   const [total, setTotal] = useState("");
   const [status, setStatus] = useState<QuoteStatus>("Draft");
-  const [issueDate, setIssueDate] = useState(() =>
-    new Date().toISOString().slice(0, 10)
-  );
+  const [issueDate, setIssueDate] = useState(() => todayIso());
   const [expiryDate, setExpiryDate] = useState("");
   const [notes, setNotes] = useState("");
+  const [prevOpen, setPrevOpen] = useState(open);
+
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setCustomerName(initial?.customerName ?? "");
+      setDealName(initial?.dealName ?? "");
+      setTotal(initial?.total ?? "");
+      setStatus(initial?.status ?? "Draft");
+      setIssueDate(initial?.issueDate ?? todayIso());
+      setExpiryDate(initial?.expiryDate ?? "");
+      setNotes(initial?.notes ?? "");
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,24 +93,18 @@ function AddQuoteDialog({
       dealName: dealName.trim() || undefined,
       total: parsedTotal,
       status,
-      issueDate: issueDate || new Date().toISOString().slice(0, 10),
+      issueDate: issueDate || todayIso(),
       expiryDate: expiryDate || undefined,
       notes: notes.trim() || undefined,
     });
-    setCustomerName("");
-    setDealName("");
-    setTotal("");
-    setStatus("Draft");
-    setNotes("");
-    onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={() => onOpenChange(false)}>
-      <DialogHeader className="pb-2">
-        <DialogTitle>New Quote</DialogTitle>
-      </DialogHeader>
-      <DialogContent>
+    <Dialog open={open} onOpenChange={(next) => onOpenChange(next)}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="pb-2">
+          <DialogTitle>New Quote</DialogTitle>
+        </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label>Quote Number</Label>
@@ -166,15 +188,31 @@ function AddQuoteDialog({
             />
           </div>
         </form>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={() => {
+              const parsedTotal = Math.max(0, Number(total) || 0);
+              if (!customerName.trim()) return;
+              onSubmit({
+                customerName: customerName.trim(),
+                dealName: dealName.trim() || undefined,
+                total: parsedTotal,
+                status,
+                issueDate: issueDate || todayIso(),
+                expiryDate: expiryDate || undefined,
+                notes: notes.trim() || undefined,
+              });
+            }}
+            disabled={!customerName.trim() || busy}
+          >
+            Create Quote
+          </Button>
+        </DialogFooter>
       </DialogContent>
-      <DialogFooter>
-        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={!customerName.trim()}>
-          Create Quote
-        </Button>
-      </DialogFooter>
     </Dialog>
   );
 }

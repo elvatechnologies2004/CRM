@@ -2,6 +2,7 @@ import "server-only";
 
 import { can } from "@/lib/crm/context";
 import { getActiveOrgId } from "@/lib/crm/base";
+import type { DbClient } from "@/lib/crm/base";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { matchTerritoryForLead } from "@/lib/territories/territories";
 import { dispatchWorkflowEvent } from "@/lib/workflows/dispatch";
@@ -44,7 +45,7 @@ export async function getRoutingRules(): Promise<{ rules: RoutingRuleRecord[]; c
 
   return {
     canManage,
-    rules: (data ?? []).map((r: any) => ({
+    rules: (data ?? []).map((r: RoutingRuleRecord) => ({
       id: r.id,
       name: r.name,
       strategy: r.strategy as RoutingStrategy,
@@ -203,9 +204,20 @@ interface Candidate {
   name: string;
 }
 
+interface PoolMemberRow {
+  user_id: string;
+  profiles: { full_name: string | null } | { full_name: string | null }[] | null;
+}
+
+interface RuleForPool {
+  strategy: string;
+  target_type: string;
+  target_id?: string | null;
+}
+
 async function fetchPool(
-  supabase: any,
-  rule: RoutingRuleRecord,
+  supabase: DbClient,
+  rule: RuleForPool,
   organizationId: string,
   matchedTerritoryId: string | null,
 ): Promise<Candidate[]> {
@@ -220,7 +232,7 @@ async function fetchPool(
       .select("user_id, profiles(full_name)")
       .eq("organization_id", organizationId)
       .eq("territory_id", territoryId);
-    return (data ?? []).map((r: any) => {
+    return (data ?? []).map((r: PoolMemberRow) => {
       const p = Array.isArray(r.profiles) ? null : (r.profiles as { full_name: string | null } | null);
       return { user_id: r.user_id, name: p?.full_name ?? r.user_id };
     });
@@ -237,7 +249,7 @@ async function fetchPool(
       .eq("organization_id", organizationId)
       .eq("status", "active")
       .eq("team_id", rule.target_id);
-    return (data ?? []).map((r: any) => {
+    return (data ?? []).map((r: PoolMemberRow) => {
       const p = Array.isArray(r.profiles) ? null : (r.profiles as { full_name: string | null } | null);
       return { user_id: r.user_id, name: p?.full_name ?? r.user_id };
     });
@@ -248,13 +260,13 @@ async function fetchPool(
     .select("user_id, profiles(full_name)")
     .eq("organization_id", organizationId)
     .eq("status", "active");
-  return (data ?? []).map((r: any) => {
+  return (data ?? []).map((r: PoolMemberRow) => {
     const p = Array.isArray(r.profiles) ? null : (r.profiles as { full_name: string | null } | null);
     return { user_id: r.user_id, name: p?.full_name ?? r.user_id };
   });
 }
 
-async function loadCounts(supabase: any, organizationId: string, userIds: string[]): Promise<Map<string, number>> {
+async function loadCounts(supabase: DbClient, organizationId: string, userIds: string[]): Promise<Map<string, number>> {
   const counts = new Map<string, number>(userIds.map((id) => [id, 0]));
   const { data } = await supabase
     .from("leads")
@@ -266,7 +278,7 @@ async function loadCounts(supabase: any, organizationId: string, userIds: string
   return counts;
 }
 
-async function pickByRoundRobin(supabase: any, organizationId: string, pool: Candidate[]): Promise<Candidate> {
+async function pickByRoundRobin(supabase: DbClient, organizationId: string, pool: Candidate[]): Promise<Candidate> {
   const counts = await loadCounts(supabase, organizationId, pool.map((c) => c.user_id));
   let best = pool[0];
   let bestCount = counts.get(best.user_id) ?? 0;
@@ -280,7 +292,7 @@ async function pickByRoundRobin(supabase: any, organizationId: string, pool: Can
   return best;
 }
 
-async function pickByLeastLoaded(supabase: any, organizationId: string, pool: Candidate[]): Promise<Candidate> {
+async function pickByLeastLoaded(supabase: DbClient, organizationId: string, pool: Candidate[]): Promise<Candidate> {
   const leadLoad = await loadCounts(supabase, organizationId, pool.map((c) => c.user_id));
   const { data: taskRows } = await supabase
     .from("tasks")
@@ -356,9 +368,9 @@ export async function autoRouteLead(lead: RouterLead): Promise<RoutingOutcome> {
     .eq("organization_id", organizationId)
     .eq("is_active", true)
     .order("priority", { ascending: false });
-  const rules = (ruleRows ?? []) as any[];
+  const rules = (ruleRows ?? []) as RoutingRuleRecord[];
 
-  const rule: any | null = rules.find((r) => {
+  const rule: RoutingRuleRecord | null = rules.find((r) => {
     if (r.strategy === "territory" && matchedTerritoryId) {
       return r.target_type === "territory" && (!r.target_id || r.target_id === matchedTerritoryId);
     }
@@ -381,7 +393,7 @@ export async function autoRouteLead(lead: RouterLead): Promise<RoutingOutcome> {
       }
     : null;
 
-  const pool = await fetchPool(supabase, ruleRecord ?? { strategy: "all", target_type: "all" } as any, organizationId, matchedTerritoryId);
+  const pool = await fetchPool(supabase, ruleRecord ?? { strategy: "all", target_type: "all" }, organizationId, matchedTerritoryId);
   if (pool.length === 0) {
     if (matchedTerritoryId) {
       await dispatchWorkflowEvent("lead.assigned", lead as unknown as Record<string, unknown>, "Territory assigned — no owner in territory team");

@@ -6,7 +6,7 @@ import {
   toIsoDate,
   uuidOrNull,
   fetchOwnerIndex,
-  getOrgIdOrThrow,
+  ensureOrgForWrite,
   PAGE_SIZE,
 } from "@/lib/crm/base";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -62,6 +62,11 @@ function daysBetween(from: Date, to: Date): number {
   return Math.max(0, Math.floor((to.getTime() - from.getTime()) / 86400000));
 }
 
+function normalizeDealStageName(name: string | null | undefined): string {
+  if (!name) return "New Opportunity";
+  return name === "New" ? "New Opportunity" : name;
+}
+
 export function mapDealRow(
   row: DealRow,
   embed: DealEmbed,
@@ -80,7 +85,7 @@ export function mapDealRow(
     pipelineId: row.pipeline_id ?? "",
     pipelineName: embed.pipelines?.name ?? "Main Sales Pipeline",
     stageId: row.stage_id ?? "",
-    stageName: embed.pipeline_stages?.name ?? "New",
+    stageName: normalizeDealStageName(embed.pipeline_stages?.name ?? "New"),
     value: row.value ? Number(row.value) : 0,
     currency: row.currency ?? "PKR",
     probability: row.probability ?? 0,
@@ -246,7 +251,7 @@ export interface DealCreateInput {
 
 export async function createDeal(input: DealCreateInput): Promise<DealRecord | null> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = ensureOrgForWrite(supabase);
+  const organizationId = await ensureOrgForWrite(supabase);
   const { data: userData } = await supabase.auth.getUser();
 
   // Resolve default pipeline + first open stage when not provided.
@@ -340,7 +345,7 @@ export interface DealUpdateInput {
 /** Update an existing deal. Returns the updated DealRecord, or null. */
 export async function updateDeal(input: DealUpdateInput): Promise<DealRecord | null> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = ensureOrgForWrite(supabase);
+  const organizationId = await ensureOrgForWrite(supabase);
 
   const patch: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
@@ -394,12 +399,26 @@ export async function updateDeal(input: DealUpdateInput): Promise<DealRecord | n
 
 export async function archiveDeal(id: string): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = ensureOrgForWrite(supabase);
+  const organizationId = await ensureOrgForWrite(supabase);
   const { error } = await supabase
     .from("deals")
     .update({ archived_at: new Date().toISOString() })
     .eq("id", id)
     .eq("organization_id", organizationId);
+  return !error;
+}
+
+/** Permanently remove a deal record from the current organization. */
+export async function deleteDeal(id: string): Promise<boolean> {
+  const supabase = await createSupabaseServerClient();
+  const organizationId = await ensureOrgForWrite(supabase);
+
+  const { error } = await supabase
+    .from("deals")
+    .delete()
+    .eq("id", id)
+    .eq("organization_id", organizationId);
+
   return !error;
 }
 

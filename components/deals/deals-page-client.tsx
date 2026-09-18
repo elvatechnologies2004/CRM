@@ -10,8 +10,8 @@ import { DealsFilters, defaultDealFilters, type DealFilterState, type DealsViewM
 import { DealsStats } from "@/components/crm/deals-stats";
 import { AddDealDialog } from "@/components/deals/add-deal-dialog";
 import { DealsTable } from "@/components/deals/deals-table";
-import { createDealAction, updateDealAction } from "@/app/deals/actions";
-import type { DealFormData, DealEditFormData } from "@/lib/deal-form";
+import { createDealAction, deleteDealAction, updateDealAction } from "@/app/deals/actions";
+import type { DealFormData } from "@/lib/deal-form";
 import type { DealRecord } from "@/lib/types";
 
 interface DealsPageClientProps {
@@ -53,7 +53,7 @@ function DealsPageClient({
   const [filters, setFilters] = useState<DealFilterState>(defaultDealFilters);
   const [view, setView] = useState<DealsViewMode>("table");
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [deleted] = useState<Set<string>>(new Set());
+  const [deleted, setDeleted] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<string | null>(null);
 
   const toggleSelected = (id: string) => {
@@ -87,9 +87,11 @@ function DealsPageClient({
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  useEffect(() => {
+  const [syncedDeals, setSyncedDeals] = useState(initialDeals);
+  if (initialDeals !== syncedDeals) {
+    setSyncedDeals(initialDeals);
     setDeals(initialDeals);
-  }, [initialDeals]);
+  }
 
   const stats = useMemo(() => {
     const visible = deals.filter((d) => !deleted.has(d.id));
@@ -233,6 +235,57 @@ function DealsPageClient({
     setAddOpen(true);
   };
 
+  const handleDeleteRow = async (deal: DealRecord) => {
+    const confirmed = window.confirm(`Delete ${deal.name}? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    const result = await deleteDealAction(deal.id);
+    if (!result.ok) {
+      setToast(result.error || "Failed to delete deal");
+      window.setTimeout(() => setToast(null), 2400);
+      return;
+    }
+
+    setDeleted((prev) => {
+      const next = new Set(prev);
+      next.add(deal.id);
+      return next;
+    });
+    setDeals((prev) => prev.filter((item) => item.id !== deal.id));
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.delete(deal.id);
+      return next;
+    });
+    setToast("Deal deleted");
+    window.setTimeout(() => setToast(null), 2000);
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+
+    const confirmed = window.confirm(`Delete ${ids.length} selected deal${ids.length > 1 ? "s" : ""}? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    const results = await Promise.all(ids.map((id) => deleteDealAction(id)));
+    if (results.some((result) => !result.ok)) {
+      setToast("One or more deals could not be deleted");
+      window.setTimeout(() => setToast(null), 2400);
+      return;
+    }
+
+    setDeleted((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => next.add(id));
+      return next;
+    });
+    setDeals((prev) => prev.filter((deal) => !ids.includes(deal.id)));
+    setSelected(new Set());
+    setToast(`${ids.length} deal${ids.length > 1 ? "s" : ""} deleted`);
+    window.setTimeout(() => setToast(null), 2000);
+  };
+
   if (loading) {
     return <DealsSkeleton />;
   }
@@ -268,6 +321,8 @@ function DealsPageClient({
         onClearSelection={() => setSelected(new Set())}
         onView={handleViewExisting}
         onEdit={openEdit}
+        onDelete={handleDeleteRow}
+        onDeleteSelected={handleBulkDelete}
         onClearFilters={clearFilters}
         owners={owners}
       />

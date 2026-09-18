@@ -1,6 +1,6 @@
 "use client";
 
-import { MousePointerClick } from "lucide-react";
+import { Loader2, MousePointerClick } from "lucide-react";
 
 import { InitialsAvatar } from "@/components/ui/avatar";
 import { LeadScoreBadge } from "@/components/leads/lead-score-badge";
@@ -14,10 +14,22 @@ import { cn } from "@/lib/utils";
 interface LeadKanbanCardProps {
   lead: LeadRecord;
   convertedDealId?: string;
+  dragging?: boolean;
+  moving?: boolean;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
   onView: (id: string) => void;
 }
 
-function LeadKanbanCard({ lead, convertedDealId, onView }: LeadKanbanCardProps) {
+function LeadKanbanCard({
+  lead,
+  convertedDealId,
+  dragging = false,
+  moving = false,
+  onDragStart,
+  onDragEnd,
+  onView,
+}: LeadKanbanCardProps) {
   const isConverted = Boolean(convertedDealId);
 
   return (
@@ -27,7 +39,10 @@ function LeadKanbanCard({ lead, convertedDealId, onView }: LeadKanbanCardProps) 
       draggable
       onDragStart={(event) => {
         event.dataTransfer.setData("text/plain", lead.id);
+        event.dataTransfer.effectAllowed = "move";
+        onDragStart?.();
       }}
+      onDragEnd={() => onDragEnd?.()}
       onClick={() => onView(lead.id)}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -35,8 +50,18 @@ function LeadKanbanCard({ lead, convertedDealId, onView }: LeadKanbanCardProps) 
           onView(lead.id);
         }
       }}
-      className="group cursor-pointer select-none rounded-xl border border-border bg-card p-3 shadow-[0_1px_2px_0_rgba(15,23,42,0.04)] transition-colors hover:border-primary/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+      className={cn(
+        "group relative cursor-pointer select-none rounded-xl border border-border bg-card p-3 shadow-[0_1px_2px_0_rgba(15,23,42,0.04)] transition-all hover:border-primary/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+        dragging && "opacity-50 ring-2 ring-primary/40"
+      )}
     >
+      {moving && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-card/70 backdrop-blur-[1px]">
+          <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden />
+          <span className="sr-only">Moving lead…</span>
+        </div>
+      )}
+
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="truncate text-[13px] font-medium text-ink">{fullName(lead)}</p>

@@ -30,7 +30,7 @@ interface ConvertLeadDialogProps {
   onOpenChange: (open: boolean) => void;
   lead: LeadRecord | null;
   owners: User[];
-  onConvert: (lead: LeadRecord, dealId: string) => void;
+  onConvert: (lead: LeadRecord) => Promise<string | null> | string | null;
 }
 
 interface ConvertForm {
@@ -55,7 +55,7 @@ function ConvertLeadDialog({
   const [form, setForm] = useState<ConvertForm>({
     dealName: "",
     pipeline: "Sales Pipeline",
-    stage: "Qualified",
+    stage: "New",
     value: "",
     currency: "PKR",
     close: "This Quarter",
@@ -65,6 +65,8 @@ function ConvertLeadDialog({
   });
   const [error, setError] = useState<string | null>(null);
   const [createdDealId, setCreatedDealId] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [prevOpen, setPrevOpen] = useState(open);
 
   if (open !== prevOpen) {
@@ -73,7 +75,7 @@ function ConvertLeadDialog({
       setForm({
         dealName: `${lead.firstName} ${lead.lastName} — ${lead.companyName}`.trim(),
         pipeline: "Sales Pipeline",
-        stage: lead.status === "Proposal" ? "Proposal" : "Qualified",
+        stage: "New",
         value: String(lead.expectedValue || ""),
         currency: lead.currency || "PKR",
         close: "This Quarter",
@@ -91,36 +93,69 @@ function ConvertLeadDialog({
   const update = (patch: Partial<ConvertForm>) =>
     setForm((prev) => ({ ...prev, ...patch }));
 
-  const handleConvert = () => {
+  const handleUseAi = async () => {
+    setAiLoading(true);
+    try {
+      const response = await fetch("/api/ai/insight", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!response.ok) {
+        throw new Error("AI suggestion unavailable");
+      }
+      const payload = (await response.json()) as { insight?: { headline?: string; detail?: string } };
+      const nextSummary = payload.insight?.headline || payload.insight?.detail || "AI recommendation ready.";
+      setAiSummary(nextSummary);
+      setForm((prev) => ({
+        ...prev,
+        notes: prev.notes ? `${prev.notes}\n${nextSummary}` : nextSummary,
+      }));
+    } catch {
+      const fallback = "AI analysis is not available right now. You can continue manually.";
+      setAiSummary(fallback);
+      setForm((prev) => ({ ...prev, notes: prev.notes ? `${prev.notes}\n${fallback}` : fallback }));
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleConvert = async () => {
     if (!form.dealName.trim()) {
-      setError("Deal name is required.");
+      setError("Opportunity name is required.");
       return;
     }
     const value = Number(form.value) || 0;
     if (value <= 0) {
-      setError("Deal value must be greater than 0.");
+      setError("Opportunity value must be greater than 0.");
       return;
     }
     setError(null);
-    const dealId = `DEAL-${1042 + Math.floor(Math.random() * 800)}`;
-    setCreatedDealId(dealId);
-    onConvert(lead, dealId);
+
+    const result = await onConvert(lead);
+    if (!result) {
+      setError("Conversion failed. Please try again.");
+      return;
+    }
+
+    setCreatedDealId(result);
+    onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Convert Lead to Deal</DialogTitle>
+          <DialogTitle>Convert Lead to Opportunity</DialogTitle>
           <DialogDescription>
-            Create a deal from this lead and move it into your pipeline.
+            Create an opportunity from this lead and move it into your pipeline.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="convert-deal-name">
-              Deal name <span className="text-danger">*</span>
+              Opportunity name <span className="text-danger">*</span>
             </Label>
             <Input
               id="convert-deal-name"
@@ -143,7 +178,7 @@ function ConvertLeadDialog({
           <div className="space-y-1.5">
             <Label>Pipeline</Label>
             <Select value={form.pipeline} onValueChange={(value) => update({ pipeline: value })}>
-              <SelectTrigger aria-label="Deal pipeline">
+              <SelectTrigger aria-label="Opportunity pipeline">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -155,7 +190,7 @@ function ConvertLeadDialog({
           <div className="space-y-1.5">
             <Label>Stage</Label>
             <Select value={form.stage} onValueChange={(value) => update({ stage: value })}>
-              <SelectTrigger aria-label="Deal stage">
+              <SelectTrigger aria-label="Opportunity stage">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -168,7 +203,7 @@ function ConvertLeadDialog({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="convert-value">
-              Deal value <span className="text-danger">*</span>
+              Opportunity value <span className="text-danger">*</span>
             </Label>
             <Input
               id="convert-value"
@@ -209,7 +244,7 @@ function ConvertLeadDialog({
           <div className="space-y-1.5">
             <Label>Owner</Label>
             <Select value={form.owner} onValueChange={(value) => update({ owner: value })}>
-              <SelectTrigger aria-label="Deal owner">
+              <SelectTrigger aria-label="Opportunity owner">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -248,17 +283,30 @@ function ConvertLeadDialog({
         {createdDealId && (
           <div className="flex items-center gap-2 rounded-lg border border-success/30 bg-success/10 px-3 py-2 text-sm text-[#15803d]">
             <CircleCheckBig className="h-4 w-4" aria-hidden />
-            Deal <span className="font-semibold">{createdDealId}</span> created for{" "}
+            Opportunity created successfully. <span className="font-semibold">{createdDealId}</span> for{" "}
             {lead.companyName}.
           </div>
         )}
+
+        <div className="space-y-3">
+          <div className="flex justify-end">
+            <Button type="button" variant="outline" onClick={handleUseAi} disabled={aiLoading}>
+              {aiLoading ? "Analyzing..." : "Use AI"}
+            </Button>
+          </div>
+          {aiSummary && (
+            <div className="rounded-md border border-border bg-muted/20 p-3 text-sm text-muted-foreground">
+              {aiSummary}
+            </div>
+          )}
+        </div>
 
         <DialogFooter>
           <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button type="button" onClick={handleConvert}>
-            {createdDealId ? "Deal created" : "Create Deal"}
+            {createdDealId ? "Approve & Create Opportunity" : "Approve & Create Opportunity"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -6,7 +6,7 @@ import {
   buildFullName,
   uuidOrNull,
   fetchOwnerIndex,
-  getOrgIdOrThrow,
+  ensureOrgForWrite,
   PAGE_SIZE,
 } from "@/lib/crm/base";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -161,7 +161,7 @@ export interface ContactCreateInput {
 
 export async function createContact(input: ContactCreateInput): Promise<ContactRecord | null> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = ensureOrgForWrite(supabase);
+  const organizationId = await ensureOrgForWrite(supabase);
   const { data: userData } = await supabase.auth.getUser();
 
   const { data } = await supabase
@@ -203,7 +203,7 @@ export interface ContactUpdateInput extends Partial<ContactCreateInput> {
 
 export async function updateContact(input: ContactUpdateInput): Promise<ContactRecord | null> {
   const supabase = await createSupabaseServerClient();
-  const organizationId = ensureOrgForWrite(supabase);
+  const organizationId = await ensureOrgForWrite(supabase);
 
   const patch: Record<string, unknown> = {
     updated_at: new Date().toISOString(),

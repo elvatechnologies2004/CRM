@@ -64,7 +64,7 @@ export const sidebarNav: SidebarNavSection[] = [
       { label: "Leads", href: "/leads", icon: UserPlus },
       { label: "Contacts", href: "/contacts", icon: ContactRound },
       { label: "Companies", href: "/companies", icon: Building2 },
-      { label: "Deals", href: "/deals", icon: BookUser },
+      { label: "Opportunities", href: "/opportunities", icon: BookUser },
       { label: "Pipeline", href: "/pipeline", icon: Kanban },
     ],
   },

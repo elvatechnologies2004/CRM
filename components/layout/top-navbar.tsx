@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { CircleHelp, Menu, Moon, PanelLeftClose, PanelLeftOpen, Sun } from "lucide-react";
 
 import { CommandSearch } from "@/components/layout/command-search";
 import { CreateMenu } from "@/components/layout/create-menu";
 import { NotificationsMenu } from "@/components/layout/notifications-menu";
 import { ProfileMenu } from "@/components/layout/profile-menu";
+import { useTheme } from "@/components/layout/theme-provider";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
@@ -21,21 +21,7 @@ function TopNavbar({
   onToggleCollapse,
   onOpenMobile,
 }: TopNavbarProps) {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-
-  useEffect(() => {
-    const stored = localStorage.getItem("theme") as "light" | "dark" | null;
-    const initialTheme = stored || "light";
-    setTheme(initialTheme);
-    document.documentElement.classList.toggle("dark", initialTheme === "dark");
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
-    document.documentElement.classList.toggle("dark", newTheme === "dark");
-  };
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <header className="glass sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 px-4 sm:px-6">

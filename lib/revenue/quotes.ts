@@ -173,15 +173,13 @@ export async function createQuote(params: CreateQuoteParams) {
       organization_id: orgId,
       quote_id: quote.id,
       product_id: item.product_id || null,
-      name_snapshot: item.name_snapshot,
-      description: item.description,
+      description: item.description ?? item.name_snapshot,
       quantity: item.quantity,
       unit_price: item.unit_price,
       discount_amount: lineDiscount,
-      tax_rate: item.tax_rate || 0,
       tax_amount: lineTax,
-      subtotal: lineSubtotal,
       line_total: lineSubtotal - lineDiscount + lineTax,
+      position: index,
     };
   });
 

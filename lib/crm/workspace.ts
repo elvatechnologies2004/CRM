@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/env";
 
 /**
@@ -28,6 +29,25 @@ export async function ensureWorkspace() {
 
   // Use email prefix for unique org name (avoids slug collision with existing orgs)
   const orgName = metadata.company || user.email?.split("@")[0] || "Workspace";
+
+  // The signup trigger (handle_new_auth_user) pre-creates a profile row with
+  // a null organization_id. create_workspace inserts a profiles row and would
+  // otherwise fail with profiles_pkey. Clear the orphan row first so the
+  // transactional bootstrap can recreate it linked to the new organization.
+  const { data: existingProfile } = await supabase
+    .from("profiles")
+    .select("organization_id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (existingProfile && !existingProfile.organization_id) {
+    try {
+      const admin = createSupabaseAdminClient();
+      await admin.from("profiles").delete().eq("id", user.id);
+    } catch (err) {
+      console.error("[workspace] orphan profile cleanup failed", err instanceof Error ? err.message : err);
+    }
+  }
 
   const { data: rpcData, error } = await supabase.rpc("create_workspace", {
     p_org_name: orgName,

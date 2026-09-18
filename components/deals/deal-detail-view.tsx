@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
+import { deleteDealAction } from "@/app/deals/actions";
 import { Button } from "@/components/ui/button";
 import { DealHealthBadge } from "@/components/crm/deal-health-badge";
 import { AIDealSummary } from "@/components/deals/ai-deal-summary";
@@ -36,19 +38,33 @@ function DealDetailView({
   deal,
   health,
 }: DealDetailViewProps) {
+  const router = useRouter();
   const [toast, setToast] = useState<string | null>(null);
 
   const handleMarkWon = () => setToast("Deal marked as won");
   const handleMarkLost = () => setToast("Deal marked as lost");
 
+  const handleDelete = async () => {
+    const confirmed = window.confirm(`Delete ${deal.name}? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    const result = await deleteDealAction(deal.id);
+    if (!result.ok) {
+      window.alert(result.error || "Failed to delete deal");
+      return;
+    }
+
+    router.push("/deals");
+  };
+
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-semibold text-ink mb-3">Deal Information</h2>
+        <h2 className="text-xl font-semibold text-ink mb-3">Opportunity Information</h2>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <p className="text-sm text-muted-foreground">Deal Name</p>
+            <p className="text-sm text-muted-foreground">Opportunity Name</p>
             <p className="font-medium text-ink">{deal.name}</p>
           </div>
           <div>
@@ -94,6 +110,12 @@ function DealDetailView({
           </Button>
           <Button variant="outline" size="sm" onClick={handleMarkLost}>
             Mark as Lost
+          </Button>
+        </div>
+
+        <div className="mt-3">
+          <Button variant="destructive" size="sm" onClick={handleDelete} className="w-full">
+            Delete Opportunity
           </Button>
         </div>
       </div>

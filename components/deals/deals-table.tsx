@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/crm-meta";
 import { toDayLabel } from "@/lib/mock-leads";
-import { Eye, Pencil, SearchIcon, SearchXIcon } from "lucide-react";
+import { Eye, Pencil, SearchIcon, SearchXIcon, Trash2 } from "lucide-react";
 import {
   Select,
   SelectTrigger,
@@ -34,6 +34,8 @@ interface DealsTableProps {
   onClearSelection: () => void;
   onView: (deal: DealRecord) => void;
   onEdit: (deal: DealRecord) => void;
+  onDelete: (deal: DealRecord) => void;
+  onDeleteSelected: () => void;
   onClearFilters: () => void;
   owners: string[];
 }
@@ -46,6 +48,8 @@ function DealsTable({
   onClearSelection,
   onView,
   onEdit,
+  onDelete,
+  onDeleteSelected,
   onClearFilters,
   owners,
 }: DealsTableProps) {
@@ -79,6 +83,9 @@ function DealsTable({
             <Button variant="outline" size="sm" onClick={onClearSelection}>
               <svg className="h-3.5 w-3.5" aria-hidden />
               Clear
+            </Button>
+            <Button variant="destructive" size="sm" onClick={onDeleteSelected}>
+              Delete selected
             </Button>
           </div>
         </div>
@@ -198,6 +205,18 @@ function DealsTable({
                           }}
                         >
                           <Pencil className="h-3.5 w-3.5" aria-hidden />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label="Delete deal"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(deal);
+                          }}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" aria-hidden />
                         </Button>
                       </div>
                     </td>

@@ -44,6 +44,8 @@ function DealNextBestAction({ deal }: DealNextBestActionProps) {
 
   const predictedWin = Math.round(deal.probability * 1.1);
 
+  const isNewOpportunity = deal.stageName === "New Opportunity" || deal.stageName === "New";
+
   return (
     <Card className="shadow-[0_1px_2px_0_rgba(15,23,42,0.04)]">
       <CardHeader className="pb-3">
@@ -55,14 +57,18 @@ function DealNextBestAction({ deal }: DealNextBestActionProps) {
       <CardContent>
         <div>
           <p className="text-sm font-semibold text-ink">
-            {deal.probability >= 70
-              ? "Schedule a pricing and implementation discussion with the primary contact within the next 24 hours."
-              : "Re-engage the account and surface a new opportunity."}
+            {isNewOpportunity
+              ? "Schedule a meeting with the decision maker to confirm scope, budget, and timeline."
+              : deal.probability >= 70
+                ? "Schedule a pricing and implementation discussion with the primary contact within the next 24 hours."
+                : "Re-engage the account and surface a new opportunity."}
           </p>
           <p className="mt-1 text-[12px] text-muted-foreground">
-            {deal.probability >= 70
-              ? "The customer has viewed the proposal twice and asked about implementation timing, but no follow-up meeting has been scheduled."
-              : "No recent activity detected; schedule a touchpoint to renew interest."}
+            {isNewOpportunity
+              ? "The opportunity is newly created and needs a sales conversation to validate fit, urgency, and next steps."
+              : deal.probability >= 70
+                ? "The customer has viewed the proposal twice and asked about implementation timing, but no follow-up meeting has been scheduled."
+                : "No recent activity detected; schedule a touchpoint to renew interest."}
           </p>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2">

@@ -108,12 +108,12 @@ export async function getOrgHierarchy(): Promise<OrgHierarchySnapshot | null> {
 
   return {
     groups: map(groups),
-    groupMembers: map(groupMembers),
+    groupMembers: map<GroupMemberRow>(groupMembers),
     businessUnits: map(businessUnits),
     regions: map(regions),
     departments: map(departments),
     teams: map(teams),
-    members: map(members).map((m: any) => {
+    members: map<MemberRow>(members).map((m) => {
       const p = Array.isArray(m.profiles) ? null : (m.profiles as { full_name: string | null } | null);
       return {
         id: m.id,

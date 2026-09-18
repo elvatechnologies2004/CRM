@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useCurrentUser } from "@/lib/current-user";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Toast } from "@/components/crm/toast";
-import { Loader2, CheckCircle, XCircle, RefreshCw, Phone } from "lucide-react";
+import { Loader2, Phone } from "lucide-react";
 import { Dialog, DialogTrigger, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
@@ -53,7 +52,7 @@ function useWhatsAppConnection(): WhatsAppHookReturn {
   const [loadingQr, setLoadingQr] = useState(false);
   const [fetching, setFetching] = useState(false);
 
-  const fetchConnectionStatus = async () => {
+  const fetchConnectionStatus = useCallback(async () => {
     try {
       const res = await fetch(
         `${WHATSAPP_CONNECTOR_API}/api/integrations/whatsapp/connection?organizationId=${orgId ?? ""}`,
@@ -81,7 +80,7 @@ function useWhatsAppConnection(): WhatsAppHookReturn {
       });
       setToastMessage("Unable to reach WhatsApp connector service");
     }
-  };
+  }, [orgId]);
 
   const connectWhatsApp = async () => {
     setStatus((prev) => ({ ...prev, state: "connecting" }));
@@ -170,7 +169,7 @@ function useWhatsAppConnection(): WhatsAppHookReturn {
         ok: true,
         externalMessageId: data.external_message_id,
       };
-    } catch (err) {
+    } catch {
       setToastMessage("Failed to reach WhatsApp connector");
       return { ok: false, error: "Failed to reach WhatsApp connector" };
     } finally {
@@ -211,8 +210,10 @@ function useWhatsAppConnection(): WhatsAppHookReturn {
   };
 
   useEffect(() => {
-    fetchConnectionStatus();
-  }, []);
+    void (async () => {
+      await fetchConnectionStatus();
+    })();
+  }, [fetchConnectionStatus]);
 
   // Poll while connecting or waiting for/scanned QR so status stays fresh
   useEffect(() => {
@@ -221,7 +222,7 @@ function useWhatsAppConnection(): WhatsAppHookReturn {
       await fetchConnectionStatus();
     }, 5000);
     return () => clearInterval(id);
-  }, [status.state]);
+  }, [status.state, fetchConnectionStatus]);
 
   return {
     status,
@@ -269,7 +270,7 @@ function SendMessageComposer({ onSend }: SendMessageComposerProps) {
       }
       setRecipient("");
       setText("");
-    } catch (err) {
+    } catch {
       setError("Failed to send message.");
     } finally {
       setSending(false);
@@ -311,12 +312,10 @@ export default function WhatsAppSettingsPage() {
   const {
     status,
     toastMessage,
-    setToastMessage,
     loadingQr,
     fetching,
     connectWhatsApp,
     disconnectWhatsApp,
-    refreshQr,
     sendWhatsAppMessage,
   } = useWhatsAppConnection() as WhatsAppHookReturn;
   const router = useRouter();
@@ -464,7 +463,7 @@ export default function WhatsAppSettingsPage() {
             <p className="text-sm text-muted-foreground">
               1. Open WhatsApp on your phone<br />
               2. Go to Linked Devices<br />
-              3. Tap "Link a Device"<br />
+              3. Tap &quot;Link a Device&quot;<br />
               4. Scan the QR code above
             </p>
           </div>

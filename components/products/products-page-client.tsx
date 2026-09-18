@@ -90,10 +90,11 @@ function ProductCard({ product, onEdit, onDelete }: { product: CrmProduct; onEdi
 interface AddProductDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialProduct?: CrmProduct | null;
   onSubmit: (product: CrmProduct) => void;
 }
 
-function AddProductDialog({ open, onOpenChange, onSubmit }: AddProductDialogProps) {
+function AddProductDialog({ open, onOpenChange, initialProduct, onSubmit }: AddProductDialogProps) {
   const [form, setForm] = useState<Omit<CrmProduct, "id" | "currency" | "taxRate" | "createdAt">>({
     name: "",
     sku: "",
@@ -108,14 +109,25 @@ function AddProductDialog({ open, onOpenChange, onSubmit }: AddProductDialogProp
   if (open !== prevOpen) {
     setPrevOpen(open);
     if (open) {
-      setForm({
-        name: "",
-        sku: "",
-        type: "Product" as ProductType,
-        unitPrice: 0,
-        category: "",
-        status: "Active",
-      });
+      setForm(
+        initialProduct
+          ? {
+              name: initialProduct.name,
+              sku: initialProduct.sku,
+              type: initialProduct.type,
+              unitPrice: initialProduct.unitPrice,
+              category: initialProduct.category,
+              status: initialProduct.status,
+            }
+          : {
+              name: "",
+              sku: "",
+              type: "Product" as ProductType,
+              unitPrice: 0,
+              category: "",
+              status: "Active",
+            }
+      );
       setError(null);
     }
   }
@@ -134,16 +146,16 @@ function AddProductDialog({ open, onOpenChange, onSubmit }: AddProductDialogProp
     }
     setError(null);
     onSubmit({
-      id: uid("pr"),
+      id: initialProduct?.id ?? uid("pr"),
       name: form.name.trim(),
       sku: form.sku.trim(),
       type: form.type,
       unitPrice: Number(form.unitPrice) || 0,
       category: form.category,
       status: form.status,
-      currency: "PKR",
-      taxRate: 0,
-      createdAt: new Date().toISOString(),
+      currency: initialProduct?.currency ?? "PKR",
+      taxRate: initialProduct?.taxRate ?? 0,
+      createdAt: initialProduct?.createdAt ?? new Date().toISOString(),
     });
     onOpenChange(false);
   };
@@ -293,12 +305,25 @@ function ProductsPageClient({ initialProducts }: ProductsPageClientProps) {
   const handleAdd = (product: CrmProduct) => {
     setProducts((prev) => [product, ...prev]);
     setToast("Product added");
+    setEditingProduct(null);
     setOpenDialog(false);
   };
 
   const handleEdit = (product: CrmProduct) => {
     setEditingProduct(product);
     setOpenDialog(true);
+  };
+
+  const handleSave = (product: CrmProduct) => {
+    if (editingProduct) {
+      setProducts((prev) => prev.map((item) => (item.id === product.id ? product : item)));
+      setToast("Product updated");
+    } else {
+      setProducts((prev) => [product, ...prev]);
+      setToast("Product added");
+    }
+    setEditingProduct(null);
+    setOpenDialog(false);
   };
 
   if (loading) return <ProductsSkeleton />;
@@ -341,8 +366,12 @@ function ProductsPageClient({ initialProducts }: ProductsPageClientProps) {
 
       <AddProductDialog
         open={openDialog}
-        onOpenChange={setOpenDialog}
-        onSubmit={(product) => editingProduct ? handleEdit(product) : handleAdd(product)}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setEditingProduct(null);
+          setOpenDialog(isOpen);
+        }}
+        initialProduct={editingProduct}
+        onSubmit={handleSave}
       />
 
       <Toast message={toast} />
