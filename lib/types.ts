@@ -54,6 +54,7 @@ export interface Lead {
   time: string;
   phone?: string;
   email?: string;
+  convertedDealId?: string;
 }
 
 export interface Deal {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { MoreHorizontal } from "lucide-react";
 
 import { archiveLeadAction, deleteLeadAction, restoreLeadAction } from "@/app/leads/actions";
@@ -21,12 +22,23 @@ interface RecordManagementMenuProps {
 }
 
 export function RecordManagementMenu({ type, id, name, converted = false, closed = false, archived = false, directDelete = false, onRefresh }: RecordManagementMenuProps) {
+  const router = useRouter();
   const [confirmAction, setConfirmAction] = useState<"delete" | "archive" | "restore" | null>(null);
   const [loading, setLoading] = useState(false);
 
   const actionLabel = confirmAction === "delete" ? `Delete ${type === "lead" ? "Lead" : "Opportunity"}` : confirmAction === "archive" ? `Archive ${type === "lead" ? "Lead" : "Opportunity"}` : `Restore ${type === "lead" ? "Lead" : "Opportunity"}`;
+  const isDeleteBlocked = Boolean(converted && !archived && type === "lead");
+  const handleEdit = () => {
+    router.push(type === "lead" ? `/leads/${id}` : `/opportunities/${id}`);
+  };
+
   const handleConfirm = async () => {
     if (!confirmAction) return;
+    if (confirmAction === "delete" && isDeleteBlocked) {
+      window.alert("Converted leads can only be archived.");
+      setConfirmAction(null);
+      return;
+    }
     setLoading(true);
     try {
       const result = type === "lead"
@@ -44,7 +56,7 @@ export function RecordManagementMenu({ type, id, name, converted = false, closed
 
   return (
     <>
-      {directDelete && !archived && (
+      {directDelete && !archived && !isDeleteBlocked && (
         <Button
           variant="outline"
           size="sm"
@@ -65,7 +77,7 @@ export function RecordManagementMenu({ type, id, name, converted = false, closed
             <DropdownMenuItem onSelect={() => setConfirmAction("restore")}>Restore {type === "lead" ? "Lead" : "Opportunity"}</DropdownMenuItem>
           ) : (
             <>
-              <DropdownMenuItem onSelect={() => window.alert(`${type === "lead" ? "Lead" : "Opportunity"} editing is available from its detail view.`)}>Edit {type === "lead" ? "Lead" : "Opportunity"}</DropdownMenuItem>
+              <DropdownMenuItem onSelect={handleEdit}>Edit {type === "lead" ? "Lead" : "Opportunity"}</DropdownMenuItem>
               {(converted || closed) ? (
                 <DropdownMenuItem onSelect={() => setConfirmAction("archive")}>Archive {type === "lead" ? "Lead" : "Opportunity"}</DropdownMenuItem>
               ) : (
@@ -82,7 +94,9 @@ export function RecordManagementMenu({ type, id, name, converted = false, closed
             <DialogTitle>{actionLabel}?</DialogTitle>
             <DialogDescription>
               {confirmAction === "delete"
-                ? `${name} will be permanently deleted. This action cannot be undone.${closed ? " Warning: deleting this closed Opportunity may affect historical sales reports, revenue and Won/Lost statistics." : ""}`
+                ? isDeleteBlocked
+                  ? "Converted leads can only be archived."
+                  : `${name} will be permanently deleted. This action cannot be undone.${closed ? " Warning: deleting this closed Opportunity may affect historical sales reports, revenue and Won/Lost statistics." : ""}`
                 : confirmAction === "archive"
                   ? `${name} will be archived and removed from the active list. Its history will be preserved.`
                   : `${name} will be restored to the active list.`}

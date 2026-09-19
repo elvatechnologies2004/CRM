@@ -150,18 +150,20 @@ function RecentLeads({ leads, leadHrefs }: RecentLeadsProps) {
                     <td className="px-3 py-3 text-right text-[13px] text-muted-foreground">
                       <div className="flex items-center justify-end gap-2">
                         <span>{lead.time}</span>
-                        <button
-                          type="button"
-                          aria-label={`Delete ${lead.name}`}
-                          disabled={deletingId === lead.id}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            void handleDelete(lead);
-                          }}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/5 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                        </button>
+                        {!lead.convertedDealId && (
+                          <button
+                            type="button"
+                            aria-label={`Delete ${lead.name}`}
+                            disabled={deletingId === lead.id}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              void handleDelete(lead);
+                            }}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/5 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

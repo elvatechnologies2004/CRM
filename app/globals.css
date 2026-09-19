@@ -17,6 +17,8 @@
   --accent-foreground: #0b183d;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
+  --danger: #ef4444;
+  --danger-foreground: #ffffff;
   --success: #22c55e;
   --warning: #f59e0b;
   --brand-blue: #7c8cff;
@@ -89,6 +91,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-brand-blue: var(--brand-blue);

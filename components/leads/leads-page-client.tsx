@@ -314,6 +314,7 @@ export function LeadsPageClient({ initialLeads, owners, archiveFilter }: LeadsPa
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
                           <Button variant="ghost" size="sm" onClick={() => router.push(`/leads/${lead.id}`)}>Open <ArrowRight className="h-4 w-4" aria-hidden /></Button>
+                          <Button variant="outline" size="sm" onClick={() => router.push(`/leads/${lead.id}?edit=1`)}>Edit</Button>
                           <RecordManagementMenu type="lead" id={lead.id} name={`${lead.firstName} ${lead.lastName}`.trim() || "Lead"} converted={Boolean(lead.convertedDealId)} archived={Boolean(lead.archivedAt)} directDelete onRefresh={() => router.refresh()} />
                         </div>
                       </td>

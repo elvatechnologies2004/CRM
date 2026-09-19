@@ -37,10 +37,14 @@ interface AddLeadDialogProps {
   owners: string[];
   onOpenChange: (open: boolean) => void;
   onCreate: (values: AddLeadFormState) => Promise<void> | void;
+  initial?: Partial<AddLeadFormState> | null;
+  mode?: "create" | "edit";
+  onUpdate?: (values: AddLeadFormState) => Promise<void> | void;
   loading?: boolean;
 }
 
-export function AddLeadDialog({ open, owners, onOpenChange, onCreate, loading = false }: AddLeadDialogProps) {
+export function AddLeadDialog({ open, owners, onOpenChange, onCreate, initial = null, mode = "create", onUpdate, loading = false }: AddLeadDialogProps) {
+  const isEdit = mode === "edit";
   const [form, setForm] = useState<AddLeadFormState>({
     customerName: "",
     company: "",
@@ -51,6 +55,24 @@ export function AddLeadDialog({ open, owners, onOpenChange, onCreate, loading = 
     notes: "",
   });
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [previousOpen, setPreviousOpen] = useState(open);
+
+  if (open !== previousOpen) {
+    setPreviousOpen(open);
+    if (open) {
+      setForm({
+        customerName: "",
+        company: "",
+        email: "",
+        phone: "",
+        source: "Website",
+        owner: owners[0] ?? "",
+        notes: "",
+        ...initial,
+      });
+      setConfirmOpen(false);
+    }
+  }
 
   const resetForm = () => {
     setForm({
@@ -72,7 +94,8 @@ export function AddLeadDialog({ open, owners, onOpenChange, onCreate, loading = 
   };
 
   const handleConfirmCreate = async () => {
-    await onCreate(form);
+    if (isEdit) await onUpdate?.(form);
+    else await onCreate(form);
     resetForm();
     onOpenChange(false);
   };
@@ -87,9 +110,9 @@ export function AddLeadDialog({ open, owners, onOpenChange, onCreate, loading = 
       <Dialog open={open} onOpenChange={handleDialogChange}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Add Lead</DialogTitle>
+            <DialogTitle>{isEdit ? "Edit Lead" : "Add Lead"}</DialogTitle>
             <DialogDescription>
-              Create a new lead. Every new lead starts as NEW automatically.
+              {isEdit ? "Update the lead details below." : "Create a new lead. Every new lead starts as NEW automatically."}
             </DialogDescription>
           </DialogHeader>
 
@@ -181,7 +204,7 @@ export function AddLeadDialog({ open, owners, onOpenChange, onCreate, loading = 
                 Cancel
               </Button>
               <Button type="submit" disabled={loading || !form.customerName.trim()}>
-                Continue
+                {isEdit ? "Review Changes" : "Continue"}
               </Button>
             </DialogFooter>
           </form>
@@ -191,9 +214,9 @@ export function AddLeadDialog({ open, owners, onOpenChange, onCreate, loading = 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Create Lead?</DialogTitle>
+              <DialogTitle>{isEdit ? "Save Lead Changes?" : "Create Lead?"}</DialogTitle>
             <DialogDescription>
-              Review the lead details before saving to your workspace.
+              {isEdit ? "Review the updated details before saving to your workspace." : "Review the lead details before saving to your workspace."}
             </DialogDescription>
           </DialogHeader>
 
@@ -216,7 +239,7 @@ export function AddLeadDialog({ open, owners, onOpenChange, onCreate, loading = 
               Cancel
             </Button>
             <Button type="button" onClick={handleConfirmCreate} disabled={loading}>
-              Create Lead
+              {isEdit ? "Save Changes" : "Create Lead"}
             </Button>
           </DialogFooter>
         </DialogContent>

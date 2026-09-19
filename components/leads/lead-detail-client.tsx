@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowUpRight, CheckCircle2, Circle, Flag, MessageSquareText, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ExportDataDialog } from "@/components/exports/export-data-dialog";
+import { AddLeadDialog, type AddLeadFormState } from "@/components/leads/add-lead-dialog";
 import { RecordManagementMenu } from "@/components/crm/record-management-menu";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -54,6 +55,7 @@ interface LeadDetailClientProps {
 
 export function LeadDetailClient({ lead: initialLead, owners }: LeadDetailClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [lead, setLead] = useState(initialLead);
   const [contactMethod, setContactMethod] = useState<(typeof methods)[number]>("Call");
   const [contactDate, setContactDate] = useState(new Date().toISOString().slice(0, 16));
@@ -84,10 +86,46 @@ export function LeadDetailClient({ lead: initialLead, owners }: LeadDetailClient
   const [unqualifiedNotes, setUnqualifiedNotes] = useState("");
   const [conversionLoading, setConversionLoading] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(searchParams.get("edit") === "1");
+  const [editLoading, setEditLoading] = useState(false);
 
   const isConverted = Boolean(lead.convertedDealId);
   const displayStatus = isConverted ? "Converted" : lead.status;
   const workflow = useMemo(() => getLeadNextStep(lead.status), [lead.status]);
+  const leadEditInitial: AddLeadFormState = {
+    customerName: `${lead.firstName} ${lead.lastName}`.trim(),
+    company: lead.companyName,
+    email: lead.email,
+    phone: lead.phone,
+    source: lead.source,
+    owner: lead.ownerName,
+    notes: lead.interest,
+  };
+
+  const handleLeadUpdate = async (values: AddLeadFormState) => {
+    setEditLoading(true);
+    try {
+      const nameParts = values.customerName.trim().split(/\s+/);
+      const result = await updateLeadAction(lead.id, {
+        firstName: nameParts[0] ?? "",
+        lastName: nameParts.slice(1).join(" "),
+        companyName: values.company,
+        email: values.email,
+        phone: values.phone,
+        source: values.source,
+        ownerId: owners.find((owner) => owner.name === values.owner)?.id,
+        notes: values.notes,
+      });
+      if (!result.lead) {
+        window.alert(result.error || "Failed to update lead.");
+        return;
+      }
+      setLead(result.lead);
+      router.refresh();
+    } finally {
+      setEditLoading(false);
+    }
+  };
 
   const handleLogContact = async () => {
     const result = await logLeadContactAction(lead.id, {
@@ -187,12 +225,23 @@ export function LeadDetailClient({ lead: initialLead, owners }: LeadDetailClient
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setExportOpen(true)}>Export Data</Button>
+          <Button variant="outline" onClick={() => setEditOpen(true)}>Edit</Button>
           <RecordManagementMenu type="lead" id={lead.id} name={`${lead.firstName} ${lead.lastName}`.trim() || "Lead"} converted={isConverted} directDelete onRefresh={() => router.refresh()} />
           <Button variant="outline" onClick={() => router.push("/leads")}>Back to Leads</Button>
         </div>
       </div>
 
       <ExportDataDialog open={exportOpen} onOpenChange={setExportOpen} defaultScope="lead" recordId={lead.id} title="Export Lead" />
+      <AddLeadDialog
+        open={editOpen}
+        owners={owners.map((owner) => owner.name)}
+        initial={leadEditInitial}
+        mode="edit"
+        loading={editLoading}
+        onOpenChange={setEditOpen}
+        onCreate={async () => undefined}
+        onUpdate={handleLeadUpdate}
+      />
 
       <div className="grid gap-6 xl:grid-cols-[1.4fr_0.6fr]">
         <Card className="p-5">
