@@ -423,18 +423,3 @@ export async function archiveDeal(id: string): Promise<boolean> {
   return !error;
 }
 
-/** Permanently remove a deal record from the current organization. */
-export async function deleteDeal(id: string): Promise<boolean> {
-  const supabase = await createSupabaseServerClient();
-  const organizationId = await ensureOrgForWrite(supabase);
-
-  const { data, error } = await supabase
-    .from("deals")
-    .delete()
-    .eq("id", id)
-    .eq("organization_id", organizationId)
-    .select("id");
-
-  return !error && Boolean(data?.length);
-}
-

@@ -455,6 +455,11 @@ export function OpportunityDetailClient({ deal, lead, meeting, activities = [] }
     setProposalSendOpen(true);
   };
 
+  const handlePrintProposal = () => {
+    if (proposalStatus !== "approved" && proposalStatus !== "sent") return;
+    window.print();
+  };
+
   const handleApproveSend = async () => {
     if (!proposalId || isSubmitting) return;
     if (!proposalForm.email?.trim() && !proposalForm.customer?.trim()) {
@@ -720,7 +725,7 @@ export function OpportunityDetailClient({ deal, lead, meeting, activities = [] }
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" onClick={() => setExportOpen(true)}>Export Data</Button>
-            <RecordManagementMenu type="opportunity" id={deal.id} name={deal.name} closed={isClosed} directDelete onRefresh={() => router.refresh()} />
+            <RecordManagementMenu type="opportunity" id={deal.id} name={deal.name} closed={isClosed} directDelete onRefresh={() => router.refresh()} onDeleted={() => router.push("/opportunities")} />
             <Badge variant={stageVariant(deal.stageName)}>{safeText(deal.stageName) || "New Opportunity"}</Badge>
           </div>
         </div>
@@ -926,7 +931,7 @@ export function OpportunityDetailClient({ deal, lead, meeting, activities = [] }
 
       <Dialog open={meetingOpen} onOpenChange={setMeetingOpen}>
         <DialogContent className="max-w-3xl">
-          <DialogHeader>
+          <DialogHeader className="px-6 pt-6">
             <DialogTitle>Schedule Meeting</DialogTitle>
             <DialogDescription>Auto-filled from the opportunity and lead details.</DialogDescription>
           </DialogHeader>
@@ -1055,90 +1060,104 @@ export function OpportunityDetailClient({ deal, lead, meeting, activities = [] }
       </Dialog>
 
       <Dialog open={proposalOpen} onOpenChange={setProposalOpen}>
-        <DialogContent className="max-h-[90vh] w-[min(1200px,92vw)] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Prepare Proposal</DialogTitle>
-            <DialogDescription>Draft and review the opportunity proposal with prefilled customer details.</DialogDescription>
+        <DialogContent className="box-border max-h-[92vh] w-[min(95vw,900px)] max-w-[95vw] overflow-y-auto p-0">
+          <DialogHeader className="min-w-0 px-6 pt-6">
+            <DialogTitle className="text-xl">Prepare Proposal</DialogTitle>
+            <DialogDescription>Draft and review the proposal details before continuing to review.</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2 md:col-span-2">
-                <Label>Proposal Title *</Label>
-                <Input value={proposalForm.title} onChange={(event) => setProposalForm((current) => ({ ...current, title: event.target.value }))} />
+          <div className="min-w-0 space-y-6 px-6 pb-2">
+            <section className="min-w-0 space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold text-ink">Proposal details</h3>
+                <p className="mt-1 text-xs text-muted-foreground">Set the proposal title and review the linked opportunity.</p>
               </div>
-              <div className="space-y-2">
+              <div className="grid min-w-0 gap-4 rounded-xl border border-border bg-muted/20 p-4 sm:grid-cols-2">
+              <div className="min-w-0 space-y-2 sm:col-span-2">
+                <Label required>Proposal Title</Label>
+                <Input className="w-full min-w-0 max-w-full" value={proposalForm.title} onChange={(event) => setProposalForm((current) => ({ ...current, title: event.target.value }))} />
+              </div>
+              <div className="min-w-0 space-y-2">
                 <Label>Proposal Date</Label>
-                <Input type="date" value={proposalForm.proposalDate} onChange={(event) => setProposalForm((current) => ({ ...current, proposalDate: event.target.value }))} />
+                <Input className="w-full min-w-0 max-w-full" type="date" value={proposalForm.proposalDate} onChange={(event) => setProposalForm((current) => ({ ...current, proposalDate: event.target.value }))} />
               </div>
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 <Label>Validity Date</Label>
-                <Input type="date" value={proposalForm.validityDate} onChange={(event) => setProposalForm((current) => ({ ...current, validityDate: event.target.value }))} />
+                <Input className="w-full min-w-0 max-w-full" type="date" value={proposalForm.validityDate} onChange={(event) => setProposalForm((current) => ({ ...current, validityDate: event.target.value }))} />
               </div>
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 <Label>Customer</Label>
-                <Input value={proposalForm.customer} readOnly />
+                <Input className="w-full min-w-0 max-w-full" value={proposalForm.customer} readOnly />
               </div>
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 <Label>Company</Label>
-                <Input value={proposalForm.company} readOnly />
+                <Input className="w-full min-w-0 max-w-full" value={proposalForm.company} readOnly />
               </div>
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 <Label>Email</Label>
-                <Input value={proposalForm.email} readOnly />
+                <Input className="w-full min-w-0 max-w-full" value={proposalForm.email} readOnly />
               </div>
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 <Label>Phone</Label>
-                <Input value={proposalForm.phone} readOnly />
+                <Input className="w-full min-w-0 max-w-full" value={proposalForm.phone} readOnly />
               </div>
-              <div className="space-y-2 md:col-span-2">
+              <div className="min-w-0 space-y-2 sm:col-span-2">
                 <Label>Opportunity</Label>
-                <Input value={proposalForm.opportunity} readOnly />
+                <Input className="w-full min-w-0 max-w-full" value={proposalForm.opportunity} readOnly />
               </div>
-            </div>
+              </div>
+            </section>
 
-            <div className="rounded-xl border border-border p-4">
-              <div className="mb-3 text-sm font-semibold uppercase tracking-[0.08em] text-muted-foreground">Products / Services</div>
+            <section className="min-w-0 rounded-xl border border-border p-4">
+              <div className="mb-1 text-sm font-semibold text-ink">Products / Services</div>
+              <p className="mb-4 text-xs text-muted-foreground">Add the items included in this proposal and confirm the totals.</p>
               <div className="space-y-3">
                 {proposalForm.items.map((item, index) => (
-                  <div key={item.id} className="grid gap-3 rounded-lg border border-border bg-muted/20 p-3 md:grid-cols-6">
-                    <div className="space-y-2 md:col-span-2">
-                      <Label>Product / Service *</Label>
-                      <Input value={item.product} onChange={(event) => handleProposalValueChange(index, "product", event.target.value)} placeholder="Service / Package" />
+                  <div key={item.id} className="grid min-w-0 gap-3 rounded-lg border border-border bg-muted/20 p-3 sm:grid-cols-2">
+                    <div className="min-w-0 space-y-2 sm:col-span-2">
+                      <Label required>Product / Service</Label>
+                      <Input className="w-full min-w-0" value={item.product} onChange={(event) => handleProposalValueChange(index, "product", event.target.value)} placeholder="Service / Package" />
                     </div>
-                    <div className="space-y-2 md:col-span-2">
+                    <div className="min-w-0 space-y-2 sm:col-span-2">
                       <Label>Description</Label>
-                      <Input value={item.description} onChange={(event) => handleProposalValueChange(index, "description", event.target.value)} placeholder="Scope and details" />
+                      <Input className="w-full min-w-0" value={item.description} onChange={(event) => handleProposalValueChange(index, "description", event.target.value)} placeholder="Scope and details" />
                     </div>
-                    <div className="space-y-2">
-                      <Label>Qty *</Label>
-                      <Input type="number" min="1" step="1" value={item.quantity} onChange={(event) => handleProposalValueChange(index, "quantity", event.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Unit Price *</Label>
-                      <Input type="number" min="0" step="0.01" value={item.unitPrice} onChange={(event) => handleProposalValueChange(index, "unitPrice", event.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Discount</Label>
-                      <Input type="number" min="0" step="0.01" value={item.discount} onChange={(event) => handleProposalValueChange(index, "discount", event.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Tax</Label>
-                      <Input type="number" min="0" step="0.01" value={item.tax} onChange={(event) => handleProposalValueChange(index, "tax", event.target.value)} />
+                    <div className="grid min-w-0 grid-cols-2 gap-3 sm:col-span-2 sm:grid-cols-4">
+                      <div className="min-w-0 space-y-2">
+                        <Label required>Qty</Label>
+                        <Input className="w-full min-w-0 max-w-full" type="number" min="1" step="1" value={item.quantity} onChange={(event) => handleProposalValueChange(index, "quantity", event.target.value)} />
+                      </div>
+                      <div className="min-w-0 space-y-2">
+                        <Label required>Unit Price</Label>
+                        <Input className="w-full min-w-0 max-w-full" type="number" min="0" step="0.01" value={item.unitPrice} onChange={(event) => handleProposalValueChange(index, "unitPrice", event.target.value)} />
+                      </div>
+                      <div className="min-w-0 space-y-2">
+                        <Label>Discount</Label>
+                        <Input className="w-full min-w-0 max-w-full" type="number" min="0" step="0.01" value={item.discount} onChange={(event) => handleProposalValueChange(index, "discount", event.target.value)} />
+                      </div>
+                      <div className="min-w-0 space-y-2">
+                        <Label>Tax</Label>
+                        <Input className="w-full min-w-0 max-w-full" type="number" min="0" step="0.01" value={item.tax} onChange={(event) => handleProposalValueChange(index, "tax", event.target.value)} />
+                      </div>
                     </div>
                   </div>
                 ))}
                 <Button type="button" variant="outline" onClick={handleAddProposalItem}>+ Add Item</Button>
               </div>
               <div className="mt-4 space-y-2 rounded-lg border border-border bg-card p-3 text-sm">
-                <div className="flex justify-between"><span>Subtotal</span><span>{formatCurrency(proposalTotals.subtotal, deal.currency)}</span></div>
-                <div className="flex justify-between"><span>Discount</span><span>{formatCurrency(proposalTotals.discount, deal.currency)}</span></div>
-                <div className="flex justify-between"><span>Tax</span><span>{formatCurrency(proposalTotals.tax, deal.currency)}</span></div>
-                <div className="flex justify-between font-semibold"><span>Grand Total</span><span>{formatCurrency(proposalTotals.total, deal.currency)}</span></div>
+                <div className="grid grid-cols-[1fr_auto] gap-4"><span>Subtotal</span><span className="text-right tabular-nums">{formatCurrency(proposalTotals.subtotal, deal.currency)}</span></div>
+                <div className="grid grid-cols-[1fr_auto] gap-4"><span>Discount</span><span className="text-right tabular-nums">{formatCurrency(proposalTotals.discount, deal.currency)}</span></div>
+                <div className="grid grid-cols-[1fr_auto] gap-4"><span>Tax</span><span className="text-right tabular-nums">{formatCurrency(proposalTotals.tax, deal.currency)}</span></div>
+                <div className="grid grid-cols-[1fr_auto] gap-4 font-semibold"><span>Grand Total</span><span className="text-right tabular-nums">{formatCurrency(proposalTotals.total, deal.currency)}</span></div>
               </div>
-            </div>
+            </section>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <section className="space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold text-ink">Scope and terms</h3>
+                <p className="mt-1 text-xs text-muted-foreground">Add the customer-facing content and internal notes for this proposal.</p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2">
                 <Label>Requirements</Label>
                 <Textarea value={proposalForm.requirements} onChange={(event) => setProposalForm((current) => ({ ...current, requirements: event.target.value }))} />
@@ -1183,10 +1202,11 @@ export function OpportunityDetailClient({ deal, lead, meeting, activities = [] }
                 <Label>Customer-facing Notes</Label>
                 <Textarea value={proposalForm.customerNotes} onChange={(event) => setProposalForm((current) => ({ ...current, customerNotes: event.target.value }))} />
               </div>
-            </div>
+              </div>
+            </section>
           </div>
 
-          <DialogFooter className="mt-4">
+          <DialogFooter className="sticky bottom-0 mt-4 min-w-0 border-t border-border bg-card px-6 py-4">
             <Button variant="outline" onClick={() => setProposalOpen(false)}>Cancel</Button>
             <Button variant="secondary" onClick={handleProposalSaveDraft} disabled={isSubmitting}>{isSubmitting ? "Saving..." : "Save Draft"}</Button>
             <Button onClick={handleProposalReview} disabled={isSubmitting}>{isSubmitting ? "Preparing..." : "Continue to Review"}</Button>
@@ -1268,8 +1288,17 @@ export function OpportunityDetailClient({ deal, lead, meeting, activities = [] }
           </div>
 
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setProposalReviewOpen(false)}>Back to Edit</Button>
-            <Button onClick={handleApproveProposal} disabled={isSubmitting}>{isSubmitting ? "Approving..." : "Approve Proposal"}</Button>
+            {proposalStatus === "approved" || proposalStatus === "sent" ? (
+              <>
+                <Button variant="outline" onClick={() => setProposalReviewOpen(false)}>Back</Button>
+                <Button variant="outline" onClick={handlePrintProposal}>Print Proposal</Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => setProposalReviewOpen(false)}>Back to Edit</Button>
+                <Button onClick={handleApproveProposal} disabled={isSubmitting}>{isSubmitting ? "Approving..." : "Approve Proposal"}</Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1308,7 +1337,8 @@ export function OpportunityDetailClient({ deal, lead, meeting, activities = [] }
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setProposalSendOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setProposalSendOpen(false)}>Back</Button>
+            <Button variant="outline" onClick={handlePrintProposal}>Print Proposal</Button>
             <Button onClick={handleApproveSend} disabled={isSubmitting}>{isSubmitting ? "Sending..." : "Approve & Send"}</Button>
           </DialogFooter>
         </DialogContent>
@@ -1845,6 +1875,94 @@ export function OpportunityDetailClient({ deal, lead, meeting, activities = [] }
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <article className="proposal-print-document" aria-hidden="true">
+        <header className="proposal-print-header">
+          <div>
+            <div className="proposal-print-brand">FinloNexa</div>
+            <div className="proposal-print-kicker">Business Proposal</div>
+          </div>
+          <div className="proposal-print-meta">
+            <div>Proposal ID: {proposalId || "—"}</div>
+            <div>Status: {proposalStatus === "approved" || proposalStatus === "sent" ? "Approved" : proposalStatus}</div>
+          </div>
+        </header>
+
+        <section className="proposal-print-title-block">
+          <div className="proposal-print-kicker">Proposal</div>
+          <h1>{proposalForm.title || "Proposal"}</h1>
+          <div className="proposal-print-date">Issued {formatDate(proposalForm.proposalDate)} · Valid until {formatDate(proposalForm.validityDate)}</div>
+        </section>
+
+        <section className="proposal-print-info-grid">
+          <div><strong>Customer</strong><span>{proposalForm.customer || "—"}</span></div>
+          <div><strong>Company</strong><span>{proposalForm.company || "—"}</span></div>
+          <div><strong>Email</strong><span>{proposalForm.email || "—"}</span></div>
+          <div><strong>Phone</strong><span>{proposalForm.phone || "—"}</span></div>
+          <div><strong>Opportunity</strong><span>{proposalForm.opportunity || "—"}</span></div>
+          <div><strong>Owner</strong><span>{proposalForm.owner || "—"}</span></div>
+        </section>
+
+        <section className="proposal-print-section">
+          <h2>Executive Summary</h2>
+          <p>{proposalForm.solution || "The proposed solution addresses the customer requirements and delivery needs for this opportunity."}</p>
+        </section>
+        <section className="proposal-print-section">
+          <h2>Requirements</h2>
+          <p>{proposalForm.requirements || "No detailed requirements provided."}</p>
+        </section>
+        <section className="proposal-print-section">
+          <h2>Scope of Work</h2>
+          <p>{proposalForm.scope || proposalForm.deliverables || "Scope to be confirmed during implementation."}</p>
+        </section>
+
+        <section className="proposal-print-section proposal-print-items">
+          <h2>Products / Services</h2>
+          <table>
+            <thead>
+              <tr><th>Item</th><th>Description</th><th>Qty</th><th>Unit Price</th><th>Discount</th><th>Tax</th><th>Amount</th></tr>
+            </thead>
+            <tbody>
+              {proposalForm.items.filter((item) => item.product || item.description).map((item) => {
+                const quantity = Number(item.quantity || 0);
+                const unitPrice = Number(item.unitPrice || 0);
+                const discount = Number(item.discount || 0);
+                const tax = Number(item.tax || 0);
+                return (
+                  <tr key={item.id}>
+                    <td>{item.product || "Service"}</td>
+                    <td>{item.description || "—"}</td>
+                    <td>{quantity}</td>
+                    <td>{formatCurrency(unitPrice, deal.currency)}</td>
+                    <td>{formatCurrency(discount, deal.currency)}</td>
+                    <td>{formatCurrency(tax, deal.currency)}</td>
+                    <td>{formatCurrency(quantity * unitPrice - discount + tax, deal.currency)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div className="proposal-print-totals">
+            <div><span>Subtotal</span><strong>{formatCurrency(proposalTotals.subtotal, deal.currency)}</strong></div>
+            <div><span>Discount</span><strong>{formatCurrency(proposalTotals.discount, deal.currency)}</strong></div>
+            <div><span>Tax</span><strong>{formatCurrency(proposalTotals.tax, deal.currency)}</strong></div>
+            <div className="proposal-print-grand-total"><span>Grand Total</span><strong>{formatCurrency(proposalTotals.total, deal.currency)}</strong></div>
+          </div>
+        </section>
+
+        <section className="proposal-print-section">
+          <h2>Terms &amp; Conditions</h2>
+          <p>{proposalForm.terms || "Standard terms and conditions apply."}</p>
+        </section>
+        <section className="proposal-print-section">
+          <h2>Customer Notes</h2>
+          <p>{proposalForm.customerNotes || "—"}</p>
+        </section>
+
+        <footer className="proposal-print-footer">
+          Proposal {proposalId || "—"} · {formatDate(proposalForm.proposalDate)} · FinloNexa
+        </footer>
+      </article>
     </main>
   );
 }

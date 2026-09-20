@@ -14,31 +14,27 @@ interface RecordManagementMenuProps {
   type: "lead" | "opportunity";
   id: string;
   name: string;
-  converted?: boolean;
   closed?: boolean;
   archived?: boolean;
   directDelete?: boolean;
   onRefresh?: () => void;
+  onDeleted?: () => void;
 }
 
-export function RecordManagementMenu({ type, id, name, converted = false, closed = false, archived = false, directDelete = false, onRefresh }: RecordManagementMenuProps) {
+export function RecordManagementMenu({ type, id, name, closed = false, archived = false, directDelete = false, onRefresh, onDeleted }: RecordManagementMenuProps) {
   const router = useRouter();
   const [confirmAction, setConfirmAction] = useState<"delete" | "archive" | "restore" | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const actionLabel = confirmAction === "delete" ? `Delete ${type === "lead" ? "Lead" : "Opportunity"}` : confirmAction === "archive" ? `Archive ${type === "lead" ? "Lead" : "Opportunity"}` : `Restore ${type === "lead" ? "Lead" : "Opportunity"}`;
-  const isDeleteBlocked = Boolean(converted && !archived && type === "lead");
+  const isOpportunity = type === "opportunity";
+  const recordLabel = isOpportunity ? "Opportunity" : "Lead";
+  const actionLabel = confirmAction === "delete" ? `Delete ${recordLabel}` : confirmAction === "archive" ? `Archive ${recordLabel}` : `Restore ${recordLabel}`;
   const handleEdit = () => {
-    router.push(type === "lead" ? `/leads/${id}` : `/opportunities/${id}`);
+    router.push(isOpportunity ? `/opportunities/${id}` : `/leads/${id}`);
   };
 
   const handleConfirm = async () => {
     if (!confirmAction) return;
-    if (confirmAction === "delete" && isDeleteBlocked) {
-      window.alert("Converted leads can only be archived.");
-      setConfirmAction(null);
-      return;
-    }
     setLoading(true);
     try {
       const result = type === "lead"
@@ -47,6 +43,7 @@ export function RecordManagementMenu({ type, id, name, converted = false, closed
       if (!result.ok) window.alert(result.error || "Unable to complete this action.");
       else {
         setConfirmAction(null);
+        if (confirmAction === "delete") onDeleted?.();
         onRefresh?.();
       }
     } finally {
@@ -54,9 +51,25 @@ export function RecordManagementMenu({ type, id, name, converted = false, closed
     }
   };
 
+  const dialogTitle = confirmAction === "delete" && isOpportunity
+    ? "Delete Opportunity?"
+    : `${actionLabel}?`;
+
+  const dialogDescription = confirmAction === "delete"
+    ? isOpportunity
+        ? "Are you sure you want to permanently delete this Opportunity?"
+        : `${name} will be permanently deleted. This action cannot be undone.${closed ? " Warning: deleting this closed Opportunity may affect historical sales reports, revenue and Won/Lost statistics." : ""}`
+    : confirmAction === "archive"
+      ? `${name} will be archived and removed from the active list. Its history will be preserved.`
+      : `${name} will be restored to the active list.`;
+
+  const primaryLabel = confirmAction === "delete" && isOpportunity
+    ? (loading ? "Deleting..." : "Delete Opportunity")
+    : (loading ? "Working..." : actionLabel);
+
   return (
     <>
-      {directDelete && !archived && !isDeleteBlocked && (
+      {directDelete && !archived && (
         <Button
           variant="outline"
           size="sm"
@@ -74,14 +87,12 @@ export function RecordManagementMenu({ type, id, name, converted = false, closed
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           {archived ? (
-            <DropdownMenuItem onSelect={() => setConfirmAction("restore")}>Restore {type === "lead" ? "Lead" : "Opportunity"}</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setConfirmAction("restore")}>Restore {recordLabel}</DropdownMenuItem>
           ) : (
             <>
-              <DropdownMenuItem onSelect={handleEdit}>Edit {type === "lead" ? "Lead" : "Opportunity"}</DropdownMenuItem>
-              {(converted || closed) ? (
-                <DropdownMenuItem onSelect={() => setConfirmAction("archive")}>Archive {type === "lead" ? "Lead" : "Opportunity"}</DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem onSelect={() => setConfirmAction("archive")}>Archive {type === "lead" ? "Lead" : "Opportunity"}</DropdownMenuItem>
+              <DropdownMenuItem onSelect={handleEdit}>Edit {recordLabel}</DropdownMenuItem>
+              {!isOpportunity && (
+                <DropdownMenuItem onSelect={() => setConfirmAction("archive")}>Archive {recordLabel}</DropdownMenuItem>
               )}
             </>
           )}
@@ -91,20 +102,23 @@ export function RecordManagementMenu({ type, id, name, converted = false, closed
       <Dialog open={Boolean(confirmAction)} onOpenChange={(open) => !loading && !open && setConfirmAction(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{actionLabel}?</DialogTitle>
+            <DialogTitle>{dialogTitle}</DialogTitle>
             <DialogDescription>
-              {confirmAction === "delete"
-                ? isDeleteBlocked
-                  ? "Converted leads can only be archived."
-                  : `${name} will be permanently deleted. This action cannot be undone.${closed ? " Warning: deleting this closed Opportunity may affect historical sales reports, revenue and Won/Lost statistics." : ""}`
-                : confirmAction === "archive"
-                  ? `${name} will be archived and removed from the active list. Its history will be preserved.`
-                  : `${name} will be restored to the active list.`}
+              {confirmAction === "delete" && isOpportunity ? (
+                <span className="block space-y-1.5">
+                  <span className="block">Are you sure you want to permanently delete:</span>
+                  <span className="block font-medium text-ink">{name}</span>
+                  <span className="block">This will permanently remove this Opportunity and its related operational records.</span>
+                  <span className="block">This action cannot be undone.</span>
+                </span>
+              ) : (
+                dialogDescription
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmAction(null)} disabled={loading}>Cancel</Button>
-            <Button variant={confirmAction === "delete" ? "destructive" : "default"} onClick={handleConfirm} disabled={loading}>{loading ? "Working..." : actionLabel}</Button>
+            <Button variant={confirmAction === "delete" ? "destructive" : "default"} onClick={handleConfirm} disabled={loading}>{primaryLabel}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

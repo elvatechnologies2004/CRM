@@ -129,7 +129,7 @@ export function LeadsPageClient({ initialLeads, owners, archiveFilter }: LeadsPa
 
       if (result.error || !result.lead) {
         window.alert(result.error || "Failed to create lead.");
-        return;
+        return false;
       }
 
       setLeads((prev) => [result.lead!, ...prev]);
@@ -137,9 +137,13 @@ export function LeadsPageClient({ initialLeads, owners, archiveFilter }: LeadsPa
       setStageFilter("all");
       setOwnerFilter("all");
       setSourceFilter("all");
-      router.refresh();
-    } finally {
       setSubmitting(false);
+      router.refresh();
+      return true;
+    } catch {
+      setSubmitting(false);
+      window.alert("Failed to create lead.");
+      return false;
     }
   };
 
@@ -315,7 +319,7 @@ export function LeadsPageClient({ initialLeads, owners, archiveFilter }: LeadsPa
                         <div className="flex items-center gap-1">
                           <Button variant="ghost" size="sm" onClick={() => router.push(`/leads/${lead.id}`)}>Open <ArrowRight className="h-4 w-4" aria-hidden /></Button>
                           <Button variant="outline" size="sm" onClick={() => router.push(`/leads/${lead.id}?edit=1`)}>Edit</Button>
-                          <RecordManagementMenu type="lead" id={lead.id} name={`${lead.firstName} ${lead.lastName}`.trim() || "Lead"} converted={Boolean(lead.convertedDealId)} archived={Boolean(lead.archivedAt)} directDelete onRefresh={() => router.refresh()} />
+                          <RecordManagementMenu type="lead" id={lead.id} name={`${lead.firstName} ${lead.lastName}`.trim() || "Lead"} archived={Boolean(lead.archivedAt)} directDelete onRefresh={() => router.refresh()} />
                         </div>
                       </td>
                     </tr>

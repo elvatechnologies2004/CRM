@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export type ExportScope = "leads" | "opportunities" | "sales_report" | "lead" | "opportunity";
+export type ExportScope = "leads" | "opportunities" | "proposals" | "sales_report" | "lead" | "opportunity";
 export type ExportFormat = "pdf" | "xlsx";
 type DateRangePreset = "today" | "last7" | "last30" | "month" | "custom" | "all";
 
@@ -132,6 +132,10 @@ export function ExportDataDialog({ open, onOpenChange, defaultScope = "sales_rep
               <label className="flex items-center gap-2 rounded-md border border-border p-2 text-sm">
                 <input type="radio" name="scope" checked={scope === "opportunities"} onChange={() => setScope("opportunities")} />
                 <span>Opportunities</span>
+              </label>
+              <label className="flex items-center gap-2 rounded-md border border-border p-2 text-sm">
+                <input type="radio" name="scope" checked={scope === "proposals"} onChange={() => setScope("proposals")} />
+                <span>Proposals</span>
               </label>
               <label className="flex items-center gap-2 rounded-md border border-border p-2 text-sm">
                 <input type="radio" name="scope" checked={scope === "sales_report"} onChange={() => setScope("sales_report")} />

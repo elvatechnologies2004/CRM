@@ -118,10 +118,11 @@ export function LeadDetailClient({ lead: initialLead, owners }: LeadDetailClient
       });
       if (!result.lead) {
         window.alert(result.error || "Failed to update lead.");
-        return;
+        return false;
       }
       setLead(result.lead);
       router.refresh();
+      return true;
     } finally {
       setEditLoading(false);
     }
@@ -149,7 +150,11 @@ export function LeadDetailClient({ lead: initialLead, owners }: LeadDetailClient
 
   const handleApproveContact = async () => {
     const result = await updateLeadAction(lead.id, { status: "Contacted" });
-    if (result.lead) setLead(result.lead);
+    if (!result.lead) {
+      window.alert(result.error || "Failed to approve contact stage.");
+      return;
+    }
+    setLead(result.lead);
     setApprovalOpen(false);
     await createLeadActivityAction(lead.id, "Moved to Contacted", "Customer contact approved and stage advanced to Contacted.", "lead_stage_changed");
     router.refresh();
@@ -226,7 +231,7 @@ export function LeadDetailClient({ lead: initialLead, owners }: LeadDetailClient
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setExportOpen(true)}>Export Data</Button>
           <Button variant="outline" onClick={() => setEditOpen(true)}>Edit</Button>
-          <RecordManagementMenu type="lead" id={lead.id} name={`${lead.firstName} ${lead.lastName}`.trim() || "Lead"} converted={isConverted} directDelete onRefresh={() => router.refresh()} />
+          <RecordManagementMenu type="lead" id={lead.id} name={`${lead.firstName} ${lead.lastName}`.trim() || "Lead"} directDelete onRefresh={() => router.refresh()} />
           <Button variant="outline" onClick={() => router.push("/leads")}>Back to Leads</Button>
         </div>
       </div>
@@ -239,7 +244,7 @@ export function LeadDetailClient({ lead: initialLead, owners }: LeadDetailClient
         mode="edit"
         loading={editLoading}
         onOpenChange={setEditOpen}
-        onCreate={async () => undefined}
+        onCreate={async () => true}
         onUpdate={handleLeadUpdate}
       />
 
@@ -350,7 +355,7 @@ export function LeadDetailClient({ lead: initialLead, owners }: LeadDetailClient
               <Input id="contact-date" type="datetime-local" value={contactDate} onChange={(event) => setContactDate(event.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="contact-outcome">Outcome</Label>
+              <Label htmlFor="contact-outcome" required>Outcome</Label>
               <Input id="contact-outcome" value={contactOutcome} onChange={(event) => setContactOutcome(event.target.value)} placeholder="Positive interest" />
             </div>
             <div className="space-y-2">

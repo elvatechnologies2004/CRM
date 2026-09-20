@@ -24,6 +24,16 @@ export interface DashboardData {
   dealRisks: DealRisk[];
 }
 
+interface DashboardAggregate {
+  totalLeads: number;
+  activeOpportunities: number;
+  wonOpportunities: number;
+  closedWonThisMonth: number;
+  expectedRevenue: number;
+  dealsByStage: Record<string, number>;
+  revenueByMonth: Record<string, number>;
+}
+
 /**
  * Server-computed dashboard aggregates (Steps 59–60). All SQL-side.
  * Returns null when Supabase is unavailable so pages fall back to mocks.
@@ -35,25 +45,13 @@ export async function getDashboardData(): Promise<DashboardData | null> {
   const organizationId = await getActiveOrgId(supabase);
   if (!organizationId) return null;
 
-  const [leadsRes, dealsRes, stageRes, recentLeadsRes, tasksRes, meetingsRes, risksRes] =
+  const [summaryRes, recentLeadsRes, tasksRes, meetingsRes, risksRes] =
     await Promise.all([
       supabase
-        .from("leads")
-        .select("id", { count: "exact", head: true })
+        .from("crm_dashboard_summary")
+        .select("total_leads, active_opportunities, won_opportunities, closed_won_this_month, expected_revenue, deals_by_stage, revenue_by_month")
         .eq("organization_id", organizationId)
-        .is("archived_at", null),
-      supabase
-        .from("deals")
-        .select("won_at, lost_at, value, probability, expected_close_date, name, id")
-        .eq("organization_id", organizationId)
-        .is("archived_at", null),
-      supabase
-        .from("deals")
-        .select("stage_id, pipeline_stages(name, position)")
-        .eq("organization_id", organizationId)
-        .is("archived_at", null)
-        .is("won_at", null)
-        .is("lost_at", null),
+        .maybeSingle(),
       supabase
         .from("leads")
         .select("id, full_name, email, company_name, source, score, created_at")
@@ -79,54 +77,35 @@ export async function getDashboardData(): Promise<DashboardData | null> {
         .limit(5),
       supabase
         .from("deals")
-        .select("id, name, companies(name), value, health_status, last_activity_at, won_at, lost_at")
+        .select("id, value, health_status, companies(name)")
         .eq("organization_id", organizationId)
         .is("archived_at", null)
         .or("health_status.eq.At Risk,health_status.eq.Critical")
         .limit(10),
     ]);
 
-  const dealRows = (dealsRes.data ?? []) as Array<{
-    won_at: string | null;
-    lost_at: string | null;
-    value: number | null;
-    probability: number | null;
-  }>;
+  const aggregate = summaryRes.data ? {
+    totalLeads: summaryRes.data.total_leads,
+    activeOpportunities: summaryRes.data.active_opportunities,
+    wonOpportunities: summaryRes.data.won_opportunities,
+    closedWonThisMonth: summaryRes.data.closed_won_this_month,
+    expectedRevenue: Number(summaryRes.data.expected_revenue ?? 0),
+    dealsByStage: (summaryRes.data.deals_by_stage ?? {}) as Record<string, number>,
+    revenueByMonth: (summaryRes.data.revenue_by_month ?? {}) as Record<string, number>,
+  } : await getDashboardAggregateFallback(supabase, organizationId);
 
-  const openDeals = dealRows.filter((d) => !d.won_at && !d.lost_at);
-  const wonDeals = dealRows.filter((d) => d.won_at);
-  const closedThisMonth = wonDeals.filter((d) =>
-    sameMonth(d.won_at, new Date()),
-  );
-
-  const expectedRevenue = openDeals.reduce(
-    (sum, d) => sum + Number(d.value ?? 0) * (Number(d.probability ?? 0) / 100),
-    0,
-  );
-
-  // Revenue Overview: last 6 completed months from won deals.
-  const revenue = buildRevenueSeries(wonDeals.map((d) => d.won_at as string));
-
-  // Deals by stage
-  const stages: Record<string, number> = {};
-  for (const row of stageRes.data ?? []) {
-    const name = Array.isArray(row.pipeline_stages)
-      ? null
-      : (row.pipeline_stages as { name: string } | null)?.name;
-    const key = name ?? "Open";
-    stages[key] = (stages[key] ?? 0) + 1;
-  }
-  const dealsByStage: DealStageOverview[] = Object.entries(stages).map(([stage, count]) => ({
+  const revenue = buildRevenueSeries(aggregate.revenueByMonth);
+  const dealsByStage: DealStageOverview[] = Object.entries(aggregate.dealsByStage).map(([stage, count]) => ({
     stage,
     count,
-    percentage: openDeals.length ? Math.round((count / openDeals.length) * 100) : 0,
+    percentage: aggregate.activeOpportunities ? Math.round((count / aggregate.activeOpportunities) * 100) : 0,
   }));
 
   const kpi: StatCardData[] = [
-    { id: "kpi-leads", label: "Total Leads", value: String(leadsRes.count ?? 0), change: "", comparison: "all time" },
-    { id: "kpi-deals", label: "Active Deals", value: String(openDeals.length), change: "", comparison: "open" },
-    { id: "kpi-revenue", label: "Expected Revenue", value: formatCompact(expectedRevenue), change: "", comparison: "weighted" },
-    { id: "kpi-won", label: "Won Deals", value: String(wonDeals.length), change: closedThisMonth.length ? `+${closedThisMonth.length}` : "", comparison: "this month" },
+    { id: "kpi-leads", label: "Total Leads", value: String(aggregate.totalLeads), change: "", comparison: "all time" },
+    { id: "kpi-deals", label: "Active Deals", value: String(aggregate.activeOpportunities), change: "", comparison: "open" },
+    { id: "kpi-revenue", label: "Expected Revenue", value: formatCompact(aggregate.expectedRevenue), change: "", comparison: "weighted" },
+    { id: "kpi-won", label: "Won Deals", value: String(aggregate.wonOpportunities), change: aggregate.closedWonThisMonth ? `+${aggregate.closedWonThisMonth}` : "", comparison: "this month" },
   ];
 
   const recentLeads: Lead[] = (recentLeadsRes.data ?? []).map((l) => ({
@@ -292,20 +271,46 @@ function startOfTomorrow(): string {
   return d.toISOString();
 }
 
-function sameMonth(iso: string | null, now: Date): boolean {
-  if (!iso) return false;
-  const d = new Date(iso);
-  return d.getUTCMonth() === now.getUTCMonth() && d.getUTCFullYear() === now.getUTCFullYear();
+async function getDashboardAggregateFallback(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  organizationId: string,
+): Promise<DashboardAggregate> {
+  const [{ count: totalLeads }, { data: deals }, { data: stages }] = await Promise.all([
+    supabase.from("leads").select("id", { count: "exact", head: true }).eq("organization_id", organizationId).is("archived_at", null),
+    supabase.from("deals").select("won_at, lost_at, value, probability").eq("organization_id", organizationId).is("archived_at", null),
+    supabase.from("deals").select("pipeline_stages(name)").eq("organization_id", organizationId).is("archived_at", null).is("won_at", null).is("lost_at", null),
+  ]);
+  const rows = (deals ?? []) as Array<{ won_at: string | null; lost_at: string | null; value: number | null; probability: number | null }>;
+  const open = rows.filter((row) => !row.won_at && !row.lost_at);
+  const won = rows.filter((row) => row.won_at);
+  const now = new Date();
+  const closedWonThisMonth = won.filter((row) => {
+    const date = new Date(row.won_at as string);
+    return date.getUTCMonth() === now.getUTCMonth() && date.getUTCFullYear() === now.getUTCFullYear();
+  }).length;
+  const dealsByStage: Record<string, number> = {};
+  for (const row of stages ?? []) {
+    const name = Array.isArray(row.pipeline_stages) ? null : (row.pipeline_stages as { name: string } | null)?.name;
+    const key = name ?? "Open";
+    dealsByStage[key] = (dealsByStage[key] ?? 0) + 1;
+  }
+  const revenueByMonth: Record<string, number> = {};
+  for (const row of won) {
+    const key = new Date(row.won_at as string).toISOString().slice(0, 7);
+    revenueByMonth[key] = (revenueByMonth[key] ?? 0) + 1;
+  }
+  return {
+    totalLeads: totalLeads ?? 0,
+    activeOpportunities: open.length,
+    wonOpportunities: won.length,
+    closedWonThisMonth,
+    expectedRevenue: open.reduce((sum, row) => sum + Number(row.value ?? 0) * Number(row.probability ?? 0) / 100, 0),
+    dealsByStage,
+    revenueByMonth,
+  };
 }
 
-function buildRevenueSeries(wonAt: string[]): RevenuePoint[] {
-  const monthTotals: Record<string, number> = {};
-  for (const iso of wonAt) {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) continue;
-    const key = d.toISOString().slice(0, 7);
-    monthTotals[key] = (monthTotals[key] ?? 0) + 1;
-  }
+function buildRevenueSeries(monthTotals: Record<string, number>): RevenuePoint[] {
   const now = new Date();
   const series: RevenuePoint[] = [];
   for (let i = 5; i >= 0; i--) {

@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 
 import { getActiveOrgId } from "@/lib/crm/base";
+import { can } from "@/lib/crm/context";
+import { permanentlyDeleteOpportunity } from "@/lib/crm/permanent-delete";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function toIsoDateTime(date: string, time: string) {
@@ -1076,11 +1078,28 @@ export async function manageOpportunityAction(dealId: string, action: "delete" |
   const { data: orgId } = await supabase.rpc("current_organization_id");
   if (!orgId) return { ok: false, error: "No active organization found." };
 
-  const { data: deal } = await supabase.from("deals").select("id, stage_id, won_at, lost_at, archived_at, pipeline_stages(name)").eq("id", dealId).eq("organization_id", orgId).maybeSingle();
+  if (action === "delete") {
+    if (!(await can("deal.delete"))) {
+      return { ok: false, error: "You do not have permission to delete opportunities." };
+    }
+
+    try {
+      await permanentlyDeleteOpportunity(dealId, orgId);
+    } catch (error) {
+      console.error("[opportunities] permanent delete failed", error);
+      return { ok: false, error: error instanceof Error ? error.message : "Opportunity deletion failed." };
+    }
+
+    revalidatePath("/opportunities");
+    revalidatePath(`/opportunities/${dealId}`);
+    revalidatePath("/dashboard");
+    revalidatePath("/admin/opportunities");
+    return { ok: true };
+  }
+
+  const { data: deal } = await supabase.from("deals").select("id, archived_at").eq("id", dealId).eq("organization_id", orgId).maybeSingle();
   if (!deal) return { ok: false, error: "Opportunity not found or access denied." };
 
-  const stageName = String((deal.pipeline_stages as { name?: string } | null)?.name ?? "");
-  const closed = Boolean(deal.won_at || deal.lost_at || ["Closed Won", "Closed Lost"].includes(stageName));
   if (action === "restore") {
     const { error } = await supabase.from("deals").update({ archived_at: null, archived_by: null }).eq("id", dealId).eq("organization_id", orgId);
     revalidatePath("/opportunities");
@@ -1088,39 +1107,12 @@ export async function manageOpportunityAction(dealId: string, action: "delete" |
     revalidatePath("/dashboard");
     return { ok: !error, error: error?.message };
   }
-  if (action === "archive") {
-    const { error } = await supabase.from("deals").update({ archived_at: new Date().toISOString(), archived_by: user.id }).eq("id", dealId).eq("organization_id", orgId);
-    revalidatePath("/opportunities");
-    revalidatePath(`/opportunities/${dealId}`);
-    revalidatePath("/dashboard");
-    return { ok: !error, error: error?.message };
-  }
-  if (closed) return { ok: false, error: "Closed opportunities can only be archived." };
 
-  const [{ count: meetings }, { count: quotes }, { count: tasks }, { count: activities }] = await Promise.all([
-    supabase.from("meetings").select("id", { count: "exact", head: true }).eq("organization_id", orgId).eq("related_type", "deal").eq("related_id", dealId),
-    supabase.from("quotes").select("id", { count: "exact", head: true }).eq("organization_id", orgId).eq("deal_id", dealId),
-    supabase.from("tasks").select("id", { count: "exact", head: true }).eq("organization_id", orgId).eq("related_type", "deal").eq("related_id", dealId),
-    supabase.from("activities").select("id", { count: "exact", head: true }).eq("organization_id", orgId).eq("deal_id", dealId),
-  ]);
-  if ((meetings ?? 0) + (quotes ?? 0) + (tasks ?? 0) + (activities ?? 0) > 0) return { ok: false, error: "This opportunity has business history and can only be archived." };
-
-  const { data: deletedRows, error } = await supabase
-    .from("deals")
-    .delete()
-    .eq("id", dealId)
-    .eq("organization_id", orgId)
-    .select("id");
-  if (error) {
-    console.error("[opportunities] delete failed", error);
-    return { ok: false, error: error.message };
-  }
-  if (!deletedRows?.length) {
-    console.error("[opportunities] delete affected zero rows", { dealId, orgId });
-    return { ok: false, error: "Opportunity was not deleted. You may not have permission to delete it." };
-  }
+  // The archive branch is kept only for API compatibility; the
+  // opportunity UI no longer offers "Archive Opportunity".
+  const { error } = await supabase.from("deals").update({ archived_at: new Date().toISOString(), archived_by: user.id }).eq("id", dealId).eq("organization_id", orgId);
   revalidatePath("/opportunities");
   revalidatePath(`/opportunities/${dealId}`);
   revalidatePath("/dashboard");
-  return { ok: true };
+  return { ok: !error, error: error?.message };
 }

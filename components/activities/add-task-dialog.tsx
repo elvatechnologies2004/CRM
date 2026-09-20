@@ -119,9 +119,7 @@ function AddTaskDialog({ open, onOpenChange, owners, initial, onSubmit }: AddTas
 
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="task-title">
-              Title <span className="text-danger">*</span>
-            </Label>
+            <Label htmlFor="task-title" required>Title</Label>
             <Input
               id="task-title"
               value={form.title}

@@ -36,10 +36,10 @@ interface AddLeadDialogProps {
   open: boolean;
   owners: string[];
   onOpenChange: (open: boolean) => void;
-  onCreate: (values: AddLeadFormState) => Promise<void> | void;
+  onCreate: (values: AddLeadFormState) => Promise<boolean>;
   initial?: Partial<AddLeadFormState> | null;
   mode?: "create" | "edit";
-  onUpdate?: (values: AddLeadFormState) => Promise<void> | void;
+  onUpdate?: (values: AddLeadFormState) => Promise<boolean>;
   loading?: boolean;
 }
 
@@ -94,8 +94,13 @@ export function AddLeadDialog({ open, owners, onOpenChange, onCreate, initial = 
   };
 
   const handleConfirmCreate = async () => {
-    if (isEdit) await onUpdate?.(form);
-    else await onCreate(form);
+    if (isEdit) {
+      const ok = await onUpdate?.(form);
+      if (ok === false) return;
+    } else {
+      const ok = await onCreate(form);
+      if (ok === false) return;
+    }
     resetForm();
     onOpenChange(false);
   };
@@ -119,7 +124,7 @@ export function AddLeadDialog({ open, owners, onOpenChange, onCreate, initial = 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="customer-name">Customer Name *</Label>
+                <Label htmlFor="customer-name" required>Customer Name</Label>
                 <Input
                   id="customer-name"
                   value={form.customerName}

@@ -71,11 +71,11 @@ function ContactForm() {
       ) : null}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="contact-name">Name</Label>
+          <Label htmlFor="contact-name" required>Name</Label>
           <Input id="contact-name" name="name" required value={form.name} onChange={handleChange} placeholder="Jane Doe" />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="contact-email">Email</Label>
+          <Label htmlFor="contact-email" required>Email</Label>
           <Input id="contact-email" name="email" type="email" required value={form.email} onChange={handleChange} placeholder="you@company.com" />
         </div>
       </div>
@@ -105,7 +105,7 @@ function ContactForm() {
         <Input id="contact-subject" name="subject" value={form.subject} onChange={handleChange} placeholder="How can we help?" />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="contact-message">Message</Label>
+        <Label htmlFor="contact-message" required>Message</Label>
         <Textarea id="contact-message" name="message" required rows={5} value={form.message} onChange={handleChange} placeholder="Tell us a bit more…" />
       </div>
       <Button type="submit" disabled={loading} className="w-full">

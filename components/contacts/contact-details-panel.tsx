@@ -77,7 +77,7 @@ function ContactDetailsPanel({ contact, onApply }: ContactDetailsPanelProps) {
         {editing ? (
           <>
             <div className="space-y-1.5">
-              <Label htmlFor="panel-email">Email</Label>
+              <Label htmlFor="panel-email" required>Email</Label>
               <Input
                 id="panel-email"
                 type="email"

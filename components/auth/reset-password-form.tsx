@@ -68,7 +68,7 @@ export function ResetPasswordForm() {
       ) : null}
 
       <div className="space-y-2">
-        <Label htmlFor="reset-password">New password</Label>
+        <Label htmlFor="reset-password" required>New password</Label>
         <Input
           id="reset-password"
           type="password"
@@ -82,7 +82,7 @@ export function ResetPasswordForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="reset-password-confirm">Confirm new password</Label>
+        <Label htmlFor="reset-password-confirm" required>Confirm new password</Label>
         <Input
           id="reset-password-confirm"
           type="password"

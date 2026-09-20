@@ -50,7 +50,7 @@ export function AddTaskDialog({ open, onOpenChange, owners, defaultOwner, onSubm
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="legacy-task-title">Title</Label>
+            <Label htmlFor="legacy-task-title" required>Title</Label>
             <Input id="legacy-task-title" value={title} onChange={(event) => setTitle(event.target.value)} />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">

@@ -53,11 +53,11 @@ function BetaSignupForm() {
         </Alert>
       ) : null}
       <div className="space-y-2">
-        <Label htmlFor="beta-name">Name</Label>
+        <Label htmlFor="beta-name" required>Name</Label>
         <Input id="beta-name" name="name" required value={form.name} onChange={handleChange} placeholder="Jane Doe" />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="beta-email">Work email</Label>
+        <Label htmlFor="beta-email" required>Work email</Label>
         <Input id="beta-email" name="email" type="email" required value={form.email} onChange={handleChange} placeholder="you@company.com" />
       </div>
       <div className="space-y-2">

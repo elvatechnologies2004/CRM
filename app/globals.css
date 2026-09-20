@@ -200,3 +200,191 @@
     background: transparent;
   }
 }
+
+.proposal-print-document {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .proposal-print-document,
+  .proposal-print-document * {
+    visibility: visible !important;
+  }
+
+  .proposal-print-document {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    color: #172033;
+    background: #fff;
+    font-family: Arial, sans-serif;
+    font-size: 10pt;
+    line-height: 1.45;
+  }
+
+  .proposal-print-header,
+  .proposal-print-info-grid,
+  .proposal-print-totals div {
+    display: grid;
+  }
+
+  .proposal-print-header {
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    gap: 24px;
+    padding-bottom: 18px;
+    border-bottom: 2px solid #172033;
+  }
+
+  .proposal-print-brand {
+    color: #4f46e5;
+    font-size: 18pt;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .proposal-print-kicker {
+    color: #64748b;
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .proposal-print-meta {
+    color: #475569;
+    font-size: 9pt;
+    text-align: right;
+  }
+
+  .proposal-print-title-block {
+    padding: 28px 0 22px;
+  }
+
+  .proposal-print-title-block h1 {
+    margin: 6px 0;
+    color: #172033;
+    font-size: 24pt;
+    line-height: 1.15;
+  }
+
+  .proposal-print-date {
+    color: #64748b;
+  }
+
+  .proposal-print-info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 24px;
+    padding: 16px;
+    border: 1px solid #d8dee9;
+    border-radius: 6px;
+    background: #f8fafc;
+  }
+
+  .proposal-print-info-grid div {
+    display: grid;
+    gap: 2px;
+  }
+
+  .proposal-print-info-grid strong {
+    color: #64748b;
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .proposal-print-section {
+    margin-top: 22px;
+    break-inside: avoid;
+  }
+
+  .proposal-print-section h2 {
+    margin: 0 0 7px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #d8dee9;
+    color: #172033;
+    font-size: 12pt;
+  }
+
+  .proposal-print-section p {
+    margin: 0;
+    white-space: pre-wrap;
+  }
+
+  .proposal-print-items {
+    break-inside: auto;
+  }
+
+  .proposal-print-items table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8.5pt;
+  }
+
+  .proposal-print-items th,
+  .proposal-print-items td {
+    padding: 7px 6px;
+    border-bottom: 1px solid #d8dee9;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .proposal-print-items th {
+    color: #475569;
+    font-size: 7.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .proposal-print-items tr {
+    break-inside: avoid;
+  }
+
+  .proposal-print-items th:nth-child(n+3),
+  .proposal-print-items td:nth-child(n+3) {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .proposal-print-totals {
+    width: min(280px, 100%);
+    margin: 14px 0 0 auto;
+  }
+
+  .proposal-print-totals div {
+    grid-template-columns: 1fr auto;
+    gap: 18px;
+    padding: 4px 0;
+  }
+
+  .proposal-print-totals strong {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .proposal-print-grand-total {
+    margin-top: 4px;
+    padding-top: 8px !important;
+    border-top: 2px solid #172033;
+    font-size: 11pt;
+  }
+
+  .proposal-print-footer {
+    margin-top: 30px;
+    padding-top: 10px;
+    border-top: 1px solid #d8dee9;
+    color: #64748b;
+    font-size: 8pt;
+    text-align: center;
+  }
+}

@@ -175,9 +175,7 @@ function AddContactDialog({
             </p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="contact-first-name">
-                  First name <span className="text-danger">*</span>
-                </Label>
+                <Label htmlFor="contact-first-name" required>First name</Label>
                 <Input
                   id="contact-first-name"
                   value={form.firstName}
@@ -196,9 +194,7 @@ function AddContactDialog({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="contact-email">
-                  Email <span className="text-danger">*</span>
-                </Label>
+                <Label htmlFor="contact-email" required>Email</Label>
                 <Input
                   id="contact-email"
                   type="email"
@@ -209,9 +205,7 @@ function AddContactDialog({
                 {fieldError(errors, "email")}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="contact-phone">
-                  Phone <span className="text-danger">*</span>
-                </Label>
+                <Label htmlFor="contact-phone" required>Phone</Label>
                 <Input
                   id="contact-phone"
                   value={form.phone}

@@ -106,9 +106,7 @@ function NewDealDialog({ open, onOpenChange, owners, onCreated }: NewDealDialogP
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="deal-name">
-              Deal name <span className="text-danger">*</span>
-            </Label>
+            <Label htmlFor="deal-name" required>Deal name</Label>
             <Input
               id="deal-name"
               value={form.name}
@@ -118,9 +116,7 @@ function NewDealDialog({ open, onOpenChange, owners, onCreated }: NewDealDialogP
             {errors.name && <p className="text-xs text-danger">{errors.name}</p>}
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="deal-value">
-              Value (PKR) <span className="text-danger">*</span>
-            </Label>
+            <Label htmlFor="deal-value" required>Value (PKR)</Label>
             <Input
               id="deal-value"
               type="number"

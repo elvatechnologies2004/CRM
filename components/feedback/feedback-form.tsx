@@ -76,12 +76,12 @@ function FeedbackForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="feedback-title">Title</Label>
+        <Label htmlFor="feedback-title" required>Title</Label>
         <Input id="feedback-title" required maxLength={160} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Short summary" />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="feedback-body">Details</Label>
+        <Label htmlFor="feedback-body" required>Details</Label>
         <Textarea id="feedback-body" required rows={5} minLength={10} maxLength={5000} value={body} onChange={(e) => setBody(e.target.value)} placeholder="Steps, expectations, and what you saw…" />
       </div>
 

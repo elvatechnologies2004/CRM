@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 
+import { can } from "@/lib/crm/context";
 import { createLead, updateLead, getLeadById } from "@/lib/crm/leads";
+import { permanentlyDeleteLead } from "@/lib/crm/permanent-delete";
 import type { LeadStatus, LeadSourceOption } from "@/lib/types";
 
 export interface LeadActionResult {
@@ -165,26 +167,19 @@ export async function deleteLeadAction(leadId: string) {
   if (!user) return { ok: false, error: "Not authenticated." };
   const { data: orgId } = await client.rpc("current_organization_id");
   if (!orgId) return { ok: false, error: "No active organization found." };
-  const { data: lead } = await client.from("leads").select("id, converted_deal_id").eq("id", leadId).eq("organization_id", orgId).maybeSingle();
+  if (!(await can("lead.delete"))) return { ok: false, error: "You do not have permission to delete leads." };
+  const { data: lead } = await client.from("leads").select("id").eq("id", leadId).eq("organization_id", orgId).maybeSingle();
   if (!lead) return { ok: false, error: "Lead not found or access denied." };
-  if (lead.converted_deal_id) return { ok: false, error: "Converted leads can only be archived." };
-  const { data: deletedRows, error } = await client
-    .from("leads")
-    .delete()
-    .eq("id", leadId)
-    .eq("organization_id", orgId)
-    .select("id");
-  if (error) {
+  try {
+    await permanentlyDeleteLead(leadId, orgId);
+  } catch (error) {
     console.error("[leads] delete failed", error);
-    return { ok: false, deletedId: leadId, error: error.message };
-  }
-  if (!deletedRows?.length) {
-    console.error("[leads] delete affected zero rows", { leadId, orgId });
-    return { ok: false, deletedId: leadId, error: "Lead was not deleted. You may not have permission to delete it." };
+    return { ok: false, deletedId: leadId, error: error instanceof Error ? error.message : "Lead deletion failed." };
   }
   revalidatePath("/leads");
   revalidatePath(`/leads/${leadId}`);
   revalidatePath("/dashboard");
+  revalidatePath("/admin/leads");
   return { ok: true, deletedId: leadId };
 }
 

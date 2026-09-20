@@ -59,7 +59,7 @@ export function LoginForm({ next = "/dashboard" }: { next?: string }) {
 
       {/* Email — reference: 1.5px #d5dff0 border, radius 9, icon left, focus #4a72e0 */}
       <div className="space-y-2">
-        <Label htmlFor="login-email" className="text-[13px] font-semibold text-[#182d4e]">
+        <Label htmlFor="login-email" required className="text-[13px] font-semibold text-[#182d4e]">
           Email Address
         </Label>
         <div className="relative">
@@ -82,7 +82,7 @@ export function LoginForm({ next = "/dashboard" }: { next?: string }) {
 
       {/* Password — reference: 1.5px #d5dff0 border, radius 9, lock icon, eye toggle */}
       <div className="space-y-2">
-        <Label htmlFor="login-password" className="text-[13px] font-semibold text-[#182d4e]">
+        <Label htmlFor="login-password" required className="text-[13px] font-semibold text-[#182d4e]">
           Password
         </Label>
         <div className="relative">

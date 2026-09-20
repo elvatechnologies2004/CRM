@@ -41,13 +41,6 @@ export async function getActivation(): Promise<ActivationResult | null> {
   if (!membership) return null;
 
   const organizationId = membership.organization_id as string;
-  const { data: organization } = await supabase
-    .from("organizations")
-    .select("id")
-    .eq("id", organizationId)
-    .maybeSingle();
-  if (!organization) return null;
-
   const [{ count: leads }, { count: opportunities }, { data: taskRows }] = await Promise.all([
     supabase
       .from("leads")
@@ -61,7 +54,7 @@ export async function getActivation(): Promise<ActivationResult | null> {
       .is("archived_at", null),
     supabase
       .from("tasks")
-      .select("id, related_type, related_id, status")
+      .select("related_type, related_id")
       .eq("organization_id", organizationId)
       .neq("status", "Cancelled"),
   ]);
@@ -70,10 +63,8 @@ export async function getActivation(): Promise<ActivationResult | null> {
     supabase,
     organizationId,
     (taskRows ?? []) as Array<{
-      id: string;
       related_type: string | null;
       related_id: string | null;
-      status: string;
     }>,
     ["lead", "deal", "contact", "company"] satisfies DashboardParentType[],
   );

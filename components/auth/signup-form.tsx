@@ -100,7 +100,7 @@ export function SignUpForm() {
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label htmlFor="signup-first-name" className="text-[13px] font-semibold text-[#182d4e]">
+          <Label htmlFor="signup-first-name" required className="text-[13px] font-semibold text-[#182d4e]">
             First name
           </Label>
           <div className="relative">
@@ -119,7 +119,7 @@ export function SignUpForm() {
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="signup-last-name" className="text-[13px] font-semibold text-[#182d4e]">
+          <Label htmlFor="signup-last-name" required className="text-[13px] font-semibold text-[#182d4e]">
             Last name
           </Label>
           <div className="relative">
@@ -159,7 +159,7 @@ export function SignUpForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="signup-email" className="text-[13px] font-semibold text-[#182d4e]">
+        <Label htmlFor="signup-email" required className="text-[13px] font-semibold text-[#182d4e]">
           Work email
         </Label>
         <div className="relative">
@@ -181,7 +181,7 @@ export function SignUpForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="signup-password" className="text-[13px] font-semibold text-[#182d4e]">
+        <Label htmlFor="signup-password" required className="text-[13px] font-semibold text-[#182d4e]">
           Password
         </Label>
         <div className="relative">

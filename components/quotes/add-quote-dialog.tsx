@@ -111,7 +111,7 @@ function AddQuoteDialog({
             <Input value={nextNumber || "Auto-assigned"} disabled />
           </div>
           <div>
-            <Label>Customer Name</Label>
+            <Label required>Customer Name</Label>
             <Input
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}

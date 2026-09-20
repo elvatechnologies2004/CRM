@@ -373,21 +373,6 @@ export async function archiveLead(id: string): Promise<boolean> {
   return !error;
 }
 
-/** Permanently remove a lead record from the current organization. */
-export async function deleteLead(id: string): Promise<boolean> {
-  const supabase = await createSupabaseServerClient();
-  const organizationId = await ensureOrgForWrite(supabase);
-
-  const { data, error } = await supabase
-    .from("leads")
-    .delete()
-    .eq("id", id)
-    .eq("organization_id", organizationId)
-    .select("id");
-
-  return !error && Boolean(data?.length);
-}
-
 /** Convert a lead to a deal via the transactional RPC (Steps 52/57). */
 export async function convertLead(id: string): Promise<string | null> {
   const supabase = await createSupabaseServerClient();

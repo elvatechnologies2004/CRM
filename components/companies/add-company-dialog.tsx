@@ -171,9 +171,7 @@ function AddCompanyDialog({
             </p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="company-name">
-                  Company name <span className="text-danger">*</span>
-                </Label>
+                <Label htmlFor="company-name" required>Company name</Label>
                 <Input
                   id="company-name"
                   value={form.name}

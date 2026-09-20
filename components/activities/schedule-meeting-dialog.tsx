@@ -42,7 +42,7 @@ export function ScheduleMeetingDialog({ open, onOpenChange, owners, onSubmit }: 
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="schedule-title">Title</Label>
+            <Label htmlFor="schedule-title" required>Title</Label>
             <Input id="schedule-title" value={title} onChange={(event) => setTitle(event.target.value)} />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -80,11 +80,11 @@ export function ScheduleMeetingDialog({ open, onOpenChange, owners, onSubmit }: 
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
-              <Label htmlFor="schedule-date">Date</Label>
+              <Label htmlFor="schedule-date" required>Date</Label>
               <Input id="schedule-date" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="schedule-time">Time</Label>
+              <Label htmlFor="schedule-time" required>Time</Label>
               <Input id="schedule-time" type="time" value={time} onChange={(event) => setTime(event.target.value)} />
             </div>
             <div className="space-y-1.5">
