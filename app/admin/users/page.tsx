@@ -90,6 +90,20 @@ export default async function AdminUsersPage({
       },
     },
     {
+      header: "Region",
+      className: "min-w-[120px]",
+      cell: (row) => (
+        <span className="text-muted-foreground">{row.salesRegionName ?? "—"}</span>
+      ),
+    },
+    {
+      header: "Reports To",
+      className: "min-w-[140px]",
+      cell: (row) => (
+        <span className="text-ink">{row.reportsToName ?? "—"}</span>
+      ),
+    },
+    {
       header: "Status",
       cell: (row) => <StatusBadge value={row.status} />,
     },

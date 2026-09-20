@@ -17,6 +17,8 @@ export interface PlatformUser {
   createdAt: string;
   organizationName: string | null;
   organizationRoleName: string | null;
+  salesRegionName: string | null;
+  reportsToName: string | null;
   orgCount: number;
   isPlatformAdmin: boolean;
 }
@@ -68,7 +70,9 @@ export async function listUsers(
     const [memberships, admins] = await Promise.all([
       db
         .from("organization_members")
-        .select("user_id, organization_id, roles(name), organizations(name)")
+        .select(
+          "user_id, organization_id, roles(name), organizations(name), sales_region_id, sales_regions(name), reports_to_user_id, reports_to:profiles!reports_to_user_id(full_name)",
+        )
         .in("user_id", userIds),
       db
         .from("platform_admins")
@@ -79,8 +83,12 @@ export async function listUsers(
     interface MembershipRow {
       user_id: string;
       organization_id: string;
+      sales_region_id: string | null;
+      reports_to_user_id: string | null;
       roles: { name: string | null } | { name: string | null }[] | null;
       organizations: { name: string | null } | { name: string | null }[] | null;
+      sales_regions: { name: string | null } | { name: string | null }[] | null;
+      reports_to: { full_name: string | null } | { full_name: string | null }[] | null;
     }
     const memberRows = (memberships?.data ?? []) as unknown as MembershipRow[];
 
@@ -88,16 +96,20 @@ export async function listUsers(
       (admins?.data ?? []).map((a: { user_id: string }) => a.user_id),
     );
 
-    const orgByUser = new Map<string, { name: string; role: string }>();
+    const orgByUser = new Map<string, { name: string; role: string; region: string | null; manager: string | null }>();
     const orgCount = new Map<string, number>();
     for (const m of memberRows) {
       orgCount.set(m.user_id, (orgCount.get(m.user_id) ?? 0) + 1);
       if (!orgByUser.has(m.user_id)) {
         const org = Array.isArray(m.organizations) ? null : m.organizations;
         const role = Array.isArray(m.roles) ? null : m.roles;
+        const region = Array.isArray(m.sales_regions) ? null : m.sales_regions;
+        const manager = Array.isArray(m.reports_to) ? null : m.reports_to;
         orgByUser.set(m.user_id, {
           name: (org as { name: string | null } | null)?.name ?? "—",
           role: (role as { name: string | null } | null)?.name ?? "—",
+          region: (region as { name: string | null } | null)?.name ?? null,
+          manager: (manager as { full_name: string | null } | null)?.full_name ?? null,
         });
       }
     }
@@ -114,6 +126,8 @@ export async function listUsers(
         createdAt: row.created_at,
         organizationName: primary?.name ?? null,
         organizationRoleName: primary?.role ?? null,
+        salesRegionName: primary?.region ?? null,
+        reportsToName: primary?.manager ?? null,
         orgCount: orgCount.get(row.id) ?? 0,
         isPlatformAdmin: adminIds.has(row.id),
       };

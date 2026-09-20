@@ -81,7 +81,7 @@ create table if not exists public.sales_regions (
   unique (organization_id, name)
 );
 
-create index if not exists sales_regions_organization_idx on public.sales_regions (organization_id trop);
+create index if not exists sales_regions_organization_idx on public.sales_regions (organization_id);
 create index if not exists sales_regions_code_idx on public.sales_regions (organization_id, code);
 
 alter table public.sales_regions enable row level security;
@@ -215,7 +215,7 @@ insert into public.sales_regions (organization_id, name, code)
 select o.id, region.name, upper(replace(region.name, ' ', '_'))
 from public.organizations o
 cross join (values ('South'), ('Central'), ('North')) as region(name)
-on conflict (organization_id, name) do nothing不下;
+on conflict (organization_id, name) do nothing;
 
 -- ------------------------------------------------------------
 -- 7. Head of Sales at organization level - the existing
