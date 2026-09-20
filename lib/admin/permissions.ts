@@ -1,4 +1,4 @@
-import "server-only";
+﻿import "server-only";
 
 import type { PlatformRole } from "@/lib/admin/types";
 
@@ -8,8 +8,12 @@ export type PlatformPermission =
   | "organizations.manage"
   | "users.view"
   | "users.manage"
+  | "region.manage"
+  | "sales.hierarchy.manage"
   | "subscriptions.view"
   | "subscriptions.manage"
+  | "region.manage"
+  | "sales.hierarchy.manage"
   | "billing.view"
   | "billing.manage"
   | "support.view"
