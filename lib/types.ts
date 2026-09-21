@@ -1218,6 +1218,20 @@ export type QuoteStatus =
   | "Rejected"
   | "Expired";
 
+/** Phase 3 — RSM approval lifecycle for proposals (separate from QuoteStatus). */
+export type QuoteApprovalStatus =
+  | "not_submitted"
+  | "pending_rsm_approval"
+  | "approved"
+  | "returned_for_revision";
+
+export const QUOTE_APPROVAL_LABELS: Record<QuoteApprovalStatus, string> = {
+  not_submitted: "Draft",
+  pending_rsm_approval: "Pending RSM Approval",
+  approved: "Approved",
+  returned_for_revision: "Returned for Revision",
+};
+
 export interface QuoteLineItem {
   id: string;
   productId?: string;
@@ -1247,6 +1261,16 @@ export interface QuoteRecord {
   tax: number;
   total: number;
   status: QuoteStatus;
+  approvalStatus?: QuoteApprovalStatus;
+  submittedForApprovalAt?: string;
+  submittedBy?: string;
+  approvedAt?: string;
+  approvedBy?: string;
+  rejectedAt?: string;
+  rejectedBy?: string;
+  rejectionReason?: string;
+  approvalCycle?: number;
+  ownerName?: string;
   terms?: string;
   notes?: string;
   createdAt: string;

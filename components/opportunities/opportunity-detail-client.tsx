@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CalendarClock, CheckCircle2, Circle, Flag, MessageSquareText, Sparkles } from "lucide-react";
 
@@ -15,6 +15,12 @@ import {
   recordOpportunityNegotiationAction,
 } from "@/app/opportunities/actions";
 import { createQuoteAction, updateQuoteStatusAction } from "@/app/quotes/actions";
+import {
+  approveProposalAction,
+  returnProposalForRevisionAction,
+  submitProposalForApprovalAction,
+  updateQuoteContentAction,
+} from "@/app/quotes/actions";
 import { Badge } from "@/components/ui/badge";
 import { ExportDataDialog } from "@/components/exports/export-data-dialog";
 import { RecordManagementMenu } from "@/components/crm/record-management-menu";
@@ -26,7 +32,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { getOpportunityNextStep } from "@/lib/leads-workflow";
-import type { DealRecord } from "@/lib/types";
+import type { ProposalApprovalView } from "@/lib/revenue/quotes";
+import { QUOTE_APPROVAL_LABELS, type DealRecord, type QuoteApprovalStatus } from "@/lib/types";
 
 const meetingTypes = ["Discovery", "Demo", "Online Meeting", "On-Site Meeting", "Follow-Up", "Other"] as const;
 const DEFAULT_TODAY = new Date().toISOString().slice(0, 10);
@@ -74,9 +81,45 @@ interface OpportunityDetailClientProps {
   lead?: { id?: string; full_name?: string | null; email?: string | null; phone?: string | null; company_name?: string | null; source?: string | null; expected_value?: number | null; owner_id?: string | null; created_at?: string | null; last_activity_at?: string | null } | null;
   meeting?: { id?: string; title?: string | null; meeting_type?: string | null; start_at?: string | null; end_at?: string | null; owner_id?: string | null; related_type?: string | null; related_id?: string | null; status?: string | null; notes?: string | null; outcome?: string | null; created_at?: string | null; created_by?: string | null } | null;
   activities?: Array<{ id: string; activity_type: string; title: string; description: string | null; occurred_at: string; actor_user_id?: string | null; metadata?: Record<string, unknown> }>;
+  latestProposal?: ProposalApprovalView | null;
+  viewer?: { userId: string; role: string; isRsm: boolean; isOrgWide: boolean } | null;
+  canApproveProposal?: boolean;
 }
 
-export function OpportunityDetailClient({ deal, lead, meeting, activities = [] }: OpportunityDetailClientProps) {
+type ProposalUiStatus = "draft" | "pending" | "approved" | "returned" | "sent";
+
+const PROPOSAL_UI_LABELS: Record<ProposalUiStatus, string> = {
+  draft: "Draft",
+  pending: "Pending RSM Approval",
+  approved: "Approved",
+  returned: "Returned for Revision",
+  sent: "Sent",
+};
+
+function initialProposalStatus(proposal: ProposalApprovalView | null | undefined): ProposalUiStatus {
+  if (!proposal) return "draft";
+  if (proposal.status === "Sent") return "sent";
+  switch (proposal.approvalStatus) {
+    case "approved":
+      return "approved";
+    case "pending_rsm_approval":
+      return "pending";
+    case "returned_for_revision":
+      return "returned";
+    default:
+      return "draft";
+  }
+}
+
+export function OpportunityDetailClient({
+  deal,
+  lead,
+  meeting,
+  activities = [],
+  latestProposal = null,
+  viewer = null,
+  canApproveProposal = false,
+}: OpportunityDetailClientProps) {
   const router = useRouter();
   const [meetingOpen, setMeetingOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -97,8 +140,11 @@ export function OpportunityDetailClient({ deal, lead, meeting, activities = [] }
   const [lostConfirmOpen, setLostConfirmOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [proposalId, setProposalId] = useState<string | null>(null);
-  const [proposalStatus, setProposalStatus] = useState<"draft" | "approved" | "sent">("draft");
+  const [proposalId, setProposalId] = useState<string | null>(latestProposal?.id ?? null);
+  const [proposalStatus, setProposalStatus] = useState<ProposalUiStatus>(() => initialProposalStatus(latestProposal));
+  const [proposalRejectionReason, setProposalRejectionReason] = useState<string>(latestProposal?.rejectionReason ?? "");
+  const [returnReasonOpen, setReturnReasonOpen] = useState(false);
+  const [returnReason, setReturnReason] = useState("");
 
   const customerName = lead?.full_name || `${deal.companyName || "Customer"}`;
 
@@ -162,6 +208,30 @@ export function OpportunityDetailClient({ deal, lead, meeting, activities = [] }
       },
     ],
   });
+
+  // Phase 3 — hydrate the proposal form from the stored proposal (revision /
+  // RSM review) so returning BDOs and reviewing RSMs see the real content.
+  useEffect(() => {
+    if (!latestProposal) return;
+    const items = latestProposal.lineItems.map((item, index) => ({
+      id: `q-${index}`,
+      product: item.name,
+      description: item.name,
+      quantity: String(item.quantity || 0),
+      unitPrice: String(item.unitPrice || 0),
+      discount: String(item.discount || 0),
+      tax: String(item.tax || 0),
+    }));
+    setProposalForm((current) => ({
+      ...current,
+      ...(items.length > 0 ? { items } : {}),
+      proposalDate: latestProposal.issueDate ? latestProposal.issueDate.slice(0, 10) : current.proposalDate,
+      validityDate: latestProposal.expiryDate ? latestProposal.expiryDate.slice(0, 10) : current.validityDate,
+      terms: latestProposal.terms || current.terms,
+      internalNotes: latestProposal.notes || current.internalNotes,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [latestProposal?.id]);
   const [negotiationForm, setNegotiationForm] = useState({
     negotiationType: "Price Discussion",
     customerRequest: "",
@@ -403,9 +473,36 @@ export function OpportunityDetailClient({ deal, lead, meeting, activities = [] }
       }));
 
     setIsSubmitting(true);
+
+    if (proposalId) {
+      // Phase 3 — editing an existing proposal saves to the SAME quote and
+      // invalidates any previous RSM approval server-side (revision flow).
+      const result = await updateQuoteContentAction({
+        quoteId: proposalId,
+        issue_date: proposalForm.proposalDate,
+        expiry_date: proposalForm.validityDate,
+        currency: deal.currency || "PKR",
+        notes: `${proposalForm.internalNotes || ""}\n\n${proposalForm.customerNotes || ""}`.trim(),
+        items: cleanItems,
+      });
+      setIsSubmitting(false);
+
+      if (!result.ok || !result.quote) {
+        window.alert(result.error || "Unable to save draft.");
+        return false;
+      }
+
+      setProposalStatus("draft");
+      setProposalRejectionReason("");
+      setProposalOpen(false);
+      router.refresh();
+      return true;
+    }
+
     const result = await createQuoteAction({
       customerName: proposalForm.customer,
       dealName: proposalForm.opportunity,
+      dealId: deal.id,
       total: proposalTotals.total || Number(proposalForm.opportunityValue || 0),
       status: "Draft",
       currency: deal.currency || "PKR",
@@ -423,6 +520,7 @@ export function OpportunityDetailClient({ deal, lead, meeting, activities = [] }
 
     setProposalId(result.quote.id);
     setProposalStatus("draft");
+    setProposalRejectionReason("");
     setProposalOpen(false);
     router.refresh();
     return true;
@@ -437,22 +535,55 @@ export function OpportunityDetailClient({ deal, lead, meeting, activities = [] }
     setProposalReviewOpen(true);
   };
 
-  const handleApproveProposal = async () => {
+  const handleSubmitProposalForApproval = async () => {
     if (!proposalId || isSubmitting) return;
-    if (!validateProposalDraft()) return;
-
     setIsSubmitting(true);
-    const result = await updateQuoteStatusAction(proposalId, "Accepted");
+    const result = await submitProposalForApprovalAction(proposalId);
     setIsSubmitting(false);
 
-    if (result.error) {
-      window.alert(result.error || "Unable to approve proposal.");
+    if (!result.ok) {
+      window.alert(result.error || result.message || "Unable to submit proposal for approval.");
+      return;
+    }
+
+    setProposalStatus("pending");
+    setProposalReviewOpen(false);
+    router.refresh();
+  };
+
+  const handleRsmApproveProposal = async () => {
+    if (!proposalId || isSubmitting) return;
+    setIsSubmitting(true);
+    const result = await approveProposalAction(proposalId);
+    setIsSubmitting(false);
+
+    if (!result.ok) {
+      window.alert(result.error || result.message || "Unable to approve proposal.");
       return;
     }
 
     setProposalStatus("approved");
     setProposalReviewOpen(false);
-    setProposalSendOpen(true);
+    router.refresh();
+  };
+
+  const handleRsmReturnProposal = async () => {
+    if (!proposalId || isSubmitting || !returnReason.trim()) return;
+    setIsSubmitting(true);
+    const result = await returnProposalForRevisionAction(proposalId, returnReason.trim());
+    setIsSubmitting(false);
+
+    if (!result.ok) {
+      window.alert(result.error || result.message || "Unable to return proposal.");
+      return;
+    }
+
+    setProposalStatus("returned");
+    setProposalRejectionReason(returnReason.trim());
+    setReturnReasonOpen(false);
+    setReturnReason("");
+    setProposalReviewOpen(false);
+    router.refresh();
   };
 
   const handlePrintProposal = () => {
@@ -462,6 +593,11 @@ export function OpportunityDetailClient({ deal, lead, meeting, activities = [] }
 
   const handleApproveSend = async () => {
     if (!proposalId || isSubmitting) return;
+    // Phase 3 — client-side mirror of the server send gate.
+    if (proposalStatus !== "approved") {
+      window.alert("This proposal requires RSM approval before it can be sent.");
+      return;
+    }
     if (!proposalForm.email?.trim() && !proposalForm.customer?.trim()) {
       window.alert("Customer email or contact information is required before sending the proposal.");
       return;
@@ -811,6 +947,20 @@ export function OpportunityDetailClient({ deal, lead, meeting, activities = [] }
           </div>
           <h2 className="mt-3 text-xl font-semibold text-ink">{workflow.title}</h2>
           <p className="mt-2 text-sm text-muted-foreground">{workflow.description}</p>
+
+          {proposalId && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <Badge variant={proposalStatus === "returned" ? "danger" : proposalStatus === "approved" ? "success" : proposalStatus === "pending" ? "warning" : "secondary"}>
+                {PROPOSAL_UI_LABELS[proposalStatus]}
+              </Badge>
+              {proposalStatus === "pending" && viewer?.isRsm && canApproveProposal && (
+                <span className="text-xs text-muted-foreground">Review the proposal to approve or return it.</span>
+              )}
+              {proposalStatus === "returned" && (
+                <span className="text-xs text-danger">{proposalRejectionReason ? `— ${proposalRejectionReason}` : "Revision required before resubmission."}</span>
+              )}
+            </div>
+          )}
 
           <div className="mt-4 flex flex-wrap gap-3">
             {workflow.primaryAction === "Schedule Meeting" && (
@@ -1228,7 +1378,9 @@ export function OpportunityDetailClient({ deal, lead, meeting, activities = [] }
                   <div className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Proposal</div>
                   <h3 className="mt-1 text-2xl font-bold text-ink">{proposalForm.title}</h3>
                 </div>
-                <Badge variant="secondary">{proposalStatus === "approved" ? "Approved" : "Draft"}</Badge>
+                <Badge variant={proposalStatus === "returned" ? "danger" : proposalStatus === "approved" ? "success" : proposalStatus === "pending" ? "warning" : "secondary"}>
+                  {PROPOSAL_UI_LABELS[proposalStatus]}
+                </Badge>
               </div>
               <div className="mt-4 grid gap-2 text-sm md:grid-cols-2">
                 <div><span className="font-medium">Customer:</span> {proposalForm.customer}</div>
@@ -1236,6 +1388,11 @@ export function OpportunityDetailClient({ deal, lead, meeting, activities = [] }
                 <div><span className="font-medium">Date:</span> {formatDate(proposalForm.proposalDate)}</div>
                 <div><span className="font-medium">Validity:</span> {proposalForm.validityDate || "—"}</div>
               </div>
+              {proposalStatus === "returned" && proposalRejectionReason && (
+                <div className="mt-3 rounded-lg border border-danger/30 bg-danger/10 p-3 text-sm text-[#991b1b]">
+                  <span className="font-semibold">Returned for Revision:</span> {proposalRejectionReason}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -1288,18 +1445,63 @@ export function OpportunityDetailClient({ deal, lead, meeting, activities = [] }
           </div>
 
           <DialogFooter className="mt-4">
-            {proposalStatus === "approved" || proposalStatus === "sent" ? (
+            {proposalStatus === "sent" && (
               <>
                 <Button variant="outline" onClick={() => setProposalReviewOpen(false)}>Back</Button>
                 <Button variant="outline" onClick={handlePrintProposal}>Print Proposal</Button>
               </>
-            ) : (
+            )}
+            {proposalStatus === "approved" && (
+              <>
+                <Button variant="outline" onClick={() => setProposalReviewOpen(false)}>Back</Button>
+                <Button variant="outline" onClick={handlePrintProposal}>Print Proposal</Button>
+                <Button onClick={() => { setProposalReviewOpen(false); setProposalSendOpen(true); }}>Ready to Send</Button>
+              </>
+            )}
+            {proposalStatus === "pending" && (
+              canApproveProposal ? (
+                <>
+                  <Button variant="outline" onClick={() => setProposalReviewOpen(false)}>Back</Button>
+                  {!returnReasonOpen && <Button variant="destructive" onClick={() => setReturnReasonOpen(true)}>Return for Revision</Button>}
+                  <Button onClick={handleRsmApproveProposal} disabled={isSubmitting}>{isSubmitting ? "Approving..." : "Approve Proposal"}</Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={() => setProposalReviewOpen(false)}>Back</Button>
+                  <Button disabled>Awaiting RSM Approval</Button>
+                </>
+              )
+            )}
+            {proposalStatus === "returned" && (
+              <>
+                <Button variant="outline" onClick={() => { setProposalReviewOpen(false); setProposalOpen(true); }}>Back to Edit</Button>
+                <Button onClick={handleSubmitProposalForApproval} disabled={isSubmitting}>{isSubmitting ? "Submitting..." : "Resubmit for Approval"}</Button>
+              </>
+            )}
+            {proposalStatus === "draft" && (
               <>
                 <Button variant="outline" onClick={() => setProposalReviewOpen(false)}>Back to Edit</Button>
-                <Button onClick={handleApproveProposal} disabled={isSubmitting}>{isSubmitting ? "Approving..." : "Approve Proposal"}</Button>
+                <Button onClick={handleSubmitProposalForApproval} disabled={isSubmitting}>{isSubmitting ? "Submitting..." : "Submit for RSM Approval"}</Button>
               </>
             )}
           </DialogFooter>
+
+          {returnReasonOpen && (
+            <div className="mt-4 space-y-2 rounded-xl border border-border bg-muted/20 p-4">
+              <Label required>Reason for Return</Label>
+              <Textarea
+                value={returnReason}
+                onChange={(event) => setReturnReason(event.target.value)}
+                placeholder="Required — explain what the BDO needs to revise before this proposal can be approved."
+              />
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => { setReturnReasonOpen(false); setReturnReason(""); }}>Cancel</Button>
+                <Button variant="destructive" size="sm" onClick={handleRsmReturnProposal} disabled={isSubmitting || !returnReason.trim()}>
+                  {isSubmitting ? "Returning..." : "Confirm Return"}
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -1884,7 +2086,7 @@ export function OpportunityDetailClient({ deal, lead, meeting, activities = [] }
           </div>
           <div className="proposal-print-meta">
             <div>Proposal ID: {proposalId || "—"}</div>
-            <div>Status: {proposalStatus === "approved" || proposalStatus === "sent" ? "Approved" : proposalStatus}</div>
+            <div>Status: {PROPOSAL_UI_LABELS[proposalStatus]}</div>
           </div>
         </header>
 

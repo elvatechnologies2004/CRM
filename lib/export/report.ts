@@ -43,6 +43,29 @@ function safeText(value: unknown): string {
   return String(value);
 }
 
+/**
+ * Phase 3 — human label for the RSM proposal approval state used in exports.
+ * Reflects the actual approval lifecycle; a rejection reason is included when
+ * a proposal has been returned for revision.
+ */
+function approvalLabel(
+  approvalStatus: unknown,
+  rejectionReason?: unknown,
+): string {
+  const map: Record<string, string> = {
+    not_submitted: "Draft",
+    pending_rsm_approval: "Pending RSM Approval",
+    approved: "Approved",
+    returned_for_revision: "Returned for Revision",
+  };
+  const key = typeof approvalStatus === "string" ? approvalStatus : "";
+  const label = map[key] ?? safeText(approvalStatus);
+  if (key === "returned_for_revision" && rejectionReason) {
+    return `${label} — ${safeText(rejectionReason)}`;
+  }
+  return label;
+}
+
 function sanitizeFileName(value: string) {
   return value
     .toLowerCase()
@@ -221,7 +244,7 @@ async function fetchNegotiationsForExport(supabase: any, orgId: string, scope: a
 async function fetchQuotesForExport(supabase: any, orgId: string, scope: any, filters: Pick<ExportRequest, "ownerId" | "from" | "to" | "id">, timeZone: string) {
   let query = supabase
     .from("quotes")
-    .select("id, quote_number, deal_id, total, status, issue_date, created_at, created_by")
+    .select("id, quote_number, deal_id, total, status, issue_date, created_at, created_by, approval_status, submitted_for_approval_at, approved_at, approved_by, rejected_at, rejected_by, rejection_reason")
     .eq("organization_id", orgId);
 
   query = applyOwnerScope(query, scope, "created_by");
@@ -1035,7 +1058,7 @@ export async function generateExportBundle(request: ExportRequest): Promise<Expo
       const [leadResult, meetingsResult, proposalsResult, followUpsResult, activitiesResult] = await Promise.all([
         supabase.from("leads").select("id, full_name, email, phone, company_name, source, expected_value, owner_id, created_at, last_activity_at, status, budget, interested_product, description").eq("organization_id", orgId).eq("converted_deal_id", deal.id).maybeSingle(),
         supabase.from("meetings").select("id, title, meeting_type, start_at, end_at, status, notes, outcome, related_id").eq("organization_id", orgId).eq("related_type", "deal").eq("related_id", deal.id).order("start_at", { ascending: true }),
-        supabase.from("quotes").select("id, quote_number, status, issue_date, expiry_date, total, terms, notes, created_at").eq("organization_id", orgId).eq("deal_id", deal.id).order("created_at", { ascending: true }),
+        supabase.from("quotes").select("id, quote_number, status, issue_date, expiry_date, total, terms, notes, created_at, approval_status, rejection_reason").eq("organization_id", orgId).eq("deal_id", deal.id).order("created_at", { ascending: true }),
         supabase.from("tasks").select("id, title, description, type, status, due_at, priority").eq("organization_id", orgId).eq("related_type", "deal").eq("related_id", deal.id).eq("type", "Follow-up").order("due_at", { ascending: true }),
         supabase.from("activities").select("id, activity_type, title, description, occurred_at, metadata").eq("organization_id", orgId).eq("deal_id", deal.id).order("occurred_at", { ascending: true }),
       ]);
@@ -1201,19 +1224,20 @@ export async function generateExportBundle(request: ExportRequest): Promise<Expo
       doc.text(`Report Period: ${periodLabel}`);
       doc.moveDown(1);
       doc.fontSize(11).fillColor("#0f172a").text("Proposals");
-      drawTable(doc, ["Proposal #", "Opportunity", "Customer", "Status", "Issue Date", "Validity", "Grand Total", "Owner"], proposals.map((p) => {
+      drawTable(doc, ["Proposal #", "Opportunity", "Customer", "Status", "Approval", "Issue Date", "Validity", "Grand Total", "Owner"], proposals.map((p) => {
         const deal = p.deal_id ? dealById.get(p.deal_id) : undefined;
         return [
           safeText(p.quote_number ?? p.id ?? "—"),
           safeText(deal?.name ?? "—"),
           safeText(deal?.customer_name ?? deal?.contacts?.full_name ?? "—"),
           safeText(p.status),
+          safeText(approvalLabel(p.approval_status, p.rejection_reason)),
           p.issue_date ? formatDate(p.issue_date) : "—",
           p.expiry_date ? formatDate(p.expiry_date) : "—",
           formatCurrency(Number(p.total ?? 0), currency),
           safeText(p.created_by ? (owners[p.created_by]?.name ?? "Owner") : "—"),
         ];
-      }), { rowHeight: 18, widths: [70, 110, 110, 60, 70, 70, 75, 70] });
+      }), { rowHeight: 18, widths: [55, 100, 100, 50, 80, 55, 55, 70, 70] });
       const buffer = await finalizePdf(doc);
       return {
         filename: `${sanitizeFileName(scope === "proposal" ? "FinloNexa-Proposal" : "FinloNexa-Proposals")}-${new Date().toISOString().slice(0, 10)}.pdf`,
@@ -1228,7 +1252,11 @@ export async function generateExportBundle(request: ExportRequest): Promise<Expo
       { header: "Proposal Number", key: "proposal_number", width: 20 },
       { header: "Opportunity", key: "opportunity", width: 24 },
       { header: "Customer", key: "customer", width: 22 },
-      { header: "Status", key: "status", width: 16 },
+      { header: "Quote Status", key: "status", width: 14 },
+      { header: "Approval Status", key: "approval_status", width: 22 },
+      { header: "Rejection Reason", key: "rejection_reason", width: 30 },
+      { header: "Submitted At", key: "submitted_at", width: 20 },
+      { header: "Approved At", key: "approved_at", width: 20 },
       { header: "Proposal Date", key: "issue_date", width: 18 },
       { header: "Validity Date", key: "expiry_date", width: 18 },
       { header: "Grand Total", key: "total", width: 14 },
@@ -1241,6 +1269,10 @@ export async function generateExportBundle(request: ExportRequest): Promise<Expo
         opportunity: safeText(deal?.name ?? "—"),
         customer: safeText(deal?.customer_name ?? deal?.contacts?.full_name ?? "—"),
         status: safeText(p.status),
+        approval_status: safeText(approvalLabel(p.approval_status, p.rejection_reason)),
+        rejection_reason: p.rejection_reason ? safeText(p.rejection_reason) : null,
+        submitted_at: p.submitted_for_approval_at ? new Date(p.submitted_for_approval_at) : null,
+        approved_at: p.approved_at ? new Date(p.approved_at) : null,
         issue_date: p.issue_date ? new Date(p.issue_date) : null,
         expiry_date: p.expiry_date ? new Date(p.expiry_date) : null,
         total: Number(p.total ?? 0),

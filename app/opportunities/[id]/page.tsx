@@ -4,6 +4,8 @@ import { OpportunityDetailClient } from "@/components/opportunities/opportunity-
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getActiveOrgId } from "@/lib/crm/base";
 import { getDealById } from "@/lib/crm/deals";
+import { getLatestProposalForDeal } from "@/lib/revenue/quotes";
+import { getSalesAccessScope } from "@/lib/crm/scope";
 
 export default async function OpportunityDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -50,5 +52,43 @@ export default async function OpportunityDetailPage({ params }: { params: Promis
     activities = activityRows ?? [];
   }
 
-  return <OpportunityDetailClient deal={deal} lead={lead} meeting={meeting} activities={activities} />;
+  // Phase 3 — resume the RSM approval workflow for this opportunity's proposal.
+  const { proposal: latestProposal } = await getLatestProposalForDeal(id);
+
+  const scope = await getSalesAccessScope();
+  const viewer = scope
+    ? {
+        userId: scope.userId,
+        role: scope.role,
+        isRsm: scope.role === "rsm",
+        isOrgWide: scope.role === "admin" || scope.role === "head_of_sales",
+      }
+    : null;
+
+  // An RSM may approve/return on this screen only when they are not the
+  // proposal's creator and the proposal is within their Phase-2 scope.
+  let canApproveProposal = false;
+  if (
+    viewer?.isRsm &&
+    latestProposal &&
+    latestProposal.createdBy !== viewer.userId
+  ) {
+    canApproveProposal = await (async () => {
+      if (scope?.visibleOwnerIds === null) return true;
+      const ownerId = latestProposal.createdBy;
+      return Boolean(ownerId && scope?.visibleOwnerIds?.has(ownerId));
+    })();
+  }
+
+  return (
+    <OpportunityDetailClient
+      deal={deal}
+      lead={lead}
+      meeting={meeting}
+      activities={activities}
+      latestProposal={latestProposal}
+      viewer={viewer}
+      canApproveProposal={canApproveProposal}
+    />
+  );
 }
