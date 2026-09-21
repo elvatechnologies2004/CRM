@@ -7,6 +7,7 @@ import "server-only";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getActiveOrgId } from "@/lib/crm/base";
+import { applyOwnerScope, canAccessRecord, getSalesAccessScope } from "@/lib/crm/scope";
 import { generateStructuredOutput } from "@/lib/ai/provider";
 import { buildLeadScoringPrompt } from "@/lib/ai/prompts";
 import { LeadScoreSchema } from "@/lib/ai/schemas";
@@ -32,6 +33,12 @@ export async function scoreLead(leadId: string): Promise<LeadScoreResult> {
     .single();
 
   if (error || !lead) {
+    throw new Error("Lead not found");
+  }
+
+  // Phase 2 — AI runs only on records inside the caller's sales scope.
+  const salesScope = await getSalesAccessScope();
+  if (salesScope && !canAccessRecord(salesScope, lead as { owner_id?: string | null; created_by?: string | null })) {
     throw new Error("Lead not found");
   }
 
@@ -74,8 +81,14 @@ export async function scoreLeadsBatch(leadIds: string[]): Promise<
     throw new Error("Failed to fetch leads");
   }
 
+  // Phase 2 — batch scoring only considers leads the caller may see.
+  const salesScope = await getSalesAccessScope();
+  const scopedLeads = salesScope
+    ? leads.filter((lead) => canAccessRecord(salesScope, lead as { owner_id?: string | null; created_by?: string | null }))
+    : leads;
+
   const results = await Promise.all(
-    leads.map(async (lead) => {
+    scopedLeads.map(async (lead) => {
       try {
         const { systemPrompt, userPrompt } = buildLeadScoringPrompt(lead as Record<string, unknown>);
         const result = await generateStructuredOutput(

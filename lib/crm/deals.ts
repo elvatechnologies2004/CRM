@@ -11,6 +11,7 @@ import {
 } from "@/lib/crm/base";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
+import { applyOwnerScope, getSalesAccessScope, assertDealAccess, canAccessRecord } from "@/lib/crm/scope";
 import type { DealRecord, Pipeline, PipelineStage } from "@/lib/types";
 
 export interface DealQuery {
@@ -131,6 +132,8 @@ export async function getDeals(query: DealQuery = {}) {
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
+  const scope = await getSalesAccessScope();
+
   let b = supabase
     .from("deals")
     .select("*, companies(name), contacts(full_name), pipelines(id, name), pipeline_stages(id, name, position)", {
@@ -138,6 +141,9 @@ export async function getDeals(query: DealQuery = {}) {
     })
     .eq("organization_id", organizationId)
     .range(from, to);
+
+  // Phase 2 — owner/region scope (primary enforcement layer).
+  b = applyOwnerScope(b, scope, "owner_id");
 
   if (query.archiveFilter !== "all" && query.archiveFilter !== "archived") b = b.is("archived_at", null);
   if (query.archiveFilter === "archived") b = b.not("archived_at", "is", null);
@@ -182,6 +188,7 @@ export async function getDealById(id: string): Promise<DealRecord | null> {
   const organizationId = await getActiveOrgId(supabase);
   if (!organizationId) return null;
 
+  const scope = await getSalesAccessScope();
   const owners = await fetchOwnerIndex(supabase, organizationId);
   const { data } = await supabase
     .from("deals")
@@ -191,6 +198,9 @@ export async function getDealById(id: string): Promise<DealRecord | null> {
     .maybeSingle();
 
   if (!data) return null;
+  if (scope && !canAccessRecord(scope, data as unknown as { owner_id?: string | null; created_by?: string | null })) {
+    return null;
+  }
   const row = data as unknown as DealRow;
   const embed: DealEmbed = {
     companies: Array.isArray(data.companies) ? null : (data.companies as { name: string } | null),
@@ -332,6 +342,14 @@ export async function createDeal(input: DealCreateInput): Promise<DealRecord | n
 /** Move a deal between stages (atomic RPC, Step 56). */
 export async function moveDealStage(id: string, stageId: string, applyProbability = true): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
+  const organizationId = await getActiveOrgId(supabase);
+  if (!organizationId) return false;
+
+  // Phase 2 — stage transitions only for deals inside the caller's scope.
+  const scope = await getSalesAccessScope();
+  const access = await assertDealAccess(supabase, scope, id, organizationId);
+  if (!access.ok) return false;
+
   const { error } = await supabase.rpc("move_deal_stage", {
     p_deal_id: id,
     p_stage_id: stageId,
@@ -361,6 +379,11 @@ export interface DealUpdateInput {
 export async function updateDeal(input: DealUpdateInput): Promise<DealRecord | null> {
   const supabase = await createSupabaseServerClient();
   const organizationId = await ensureOrgForWrite(supabase);
+
+  // Phase 2 — mutate only records inside the caller's sales scope.
+  const scope = await getSalesAccessScope();
+  const access = await assertDealAccess(supabase, scope, input.id, organizationId);
+  if (!access.ok) return null;
 
   const patch: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
@@ -415,6 +438,12 @@ export async function updateDeal(input: DealUpdateInput): Promise<DealRecord | n
 export async function archiveDeal(id: string): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
   const organizationId = await ensureOrgForWrite(supabase);
+
+  // Phase 2 — a scoped seller cannot archive someone else's opportunity.
+  const scope = await getSalesAccessScope();
+  const access = await assertDealAccess(supabase, scope, id, organizationId);
+  if (!access.ok) return false;
+
   const { error } = await supabase
     .from("deals")
     .update({ archived_at: new Date().toISOString() })

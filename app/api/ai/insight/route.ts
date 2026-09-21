@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { generateText } from "@/lib/ai/gemini";
 import { getActiveOrgId } from "@/lib/crm/base";
+import { getSalesAccessScope } from "@/lib/crm/scope";
 import { isGeminiConfigured } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AiInsight, AiInsightKind } from "@/lib/types";
@@ -82,20 +83,29 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const [{ data: deals }, { data: leads }] = await Promise.all([
-      supabase
-        .from("deals")
-        .select("name, value, probability, won_at, lost_at, stages(name)")
-        .eq("organization_id", organizationId)
-        .order("value", { ascending: false })
-        .limit(25),
-      supabase
-        .from("leads")
-        .select("full_name, company_name, status, score, source")
-        .eq("organization_id", organizationId)
-        .order("created_at", { ascending: false })
-        .limit(25),
-    ]);
+    // Phase 2 — AI insight generation works only on data the caller may see.
+    const salesScope = await getSalesAccessScope();
+    let dealsQ = supabase
+      .from("deals")
+      .select("name, value, probability, won_at, lost_at, stages(name)")
+      .eq("organization_id", organizationId)
+      .order("value", { ascending: false })
+      .limit(25);
+    if (salesScope?.visibleOwnerIds) {
+      dealsQ = dealsQ.in("owner_id", [...salesScope.visibleOwnerIds]);
+    }
+
+    let leadsQ = supabase
+      .from("leads")
+      .select("full_name, company_name, status, score, source")
+      .eq("organization_id", organizationId)
+      .order("created_at", { ascending: false })
+      .limit(25);
+    if (salesScope?.visibleOwnerIds) {
+      leadsQ = leadsQ.in("owner_id", [...salesScope.visibleOwnerIds]);
+    }
+
+    const [{ data: deals }, { data: leads }] = await Promise.all([dealsQ, leadsQ]);
 
     const dealLines = (deals ?? []).map((d) => {
       const stage = Array.isArray(d.stages)

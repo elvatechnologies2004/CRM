@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { can } from "@/lib/crm/context";
 import { createLead, updateLead, getLeadById } from "@/lib/crm/leads";
 import { permanentlyDeleteLead } from "@/lib/crm/permanent-delete";
+import { assertLeadAccess, getSalesAccessScope } from "@/lib/crm/scope";
 import type { LeadStatus, LeadSourceOption } from "@/lib/types";
 
 export interface LeadActionResult {
@@ -104,6 +105,11 @@ export async function logLeadContactAction(
   const organizationId = org as string | null;
   if (!organizationId) return { ok: false, message: "No active organization found." };
 
+  // Phase 2 — leads actions only for leads inside the caller's scope.
+  const salesScope = await getSalesAccessScope();
+  const leadAccess = await assertLeadAccess(client, salesScope, id, organizationId);
+  if (!leadAccess.ok) return { ok: false, message: "Lead not found or access denied." };
+
   const { error } = await client.from("activities").insert({
     organization_id: organizationId,
     activity_type: "call_logged",
@@ -139,6 +145,11 @@ export async function createLeadActivityAction(
   const organizationId = org as string | null;
   if (!organizationId) return { ok: false, message: "No active organization found." };
 
+  // Phase 2 — leads actions only for leads inside the caller's scope.
+  const salesScope = await getSalesAccessScope();
+  const leadAccess = await assertLeadAccess(client, salesScope, id, organizationId);
+  if (!leadAccess.ok) return { ok: false, message: "Lead not found or access denied." };
+
   const { error } = await client.from("activities").insert({
     organization_id: organizationId,
     activity_type: type,
@@ -168,6 +179,12 @@ export async function deleteLeadAction(leadId: string) {
   const { data: orgId } = await client.rpc("current_organization_id");
   if (!orgId) return { ok: false, error: "No active organization found." };
   if (!(await can("lead.delete"))) return { ok: false, error: "You do not have permission to delete leads." };
+
+  // Phase 2 — only leads inside the caller's scope can be deleted.
+  const salesScope = await getSalesAccessScope();
+  const leadAccess = await assertLeadAccess(client, salesScope, leadId, orgId);
+  if (!leadAccess.ok) return { ok: false, error: "Lead not found or access denied." };
+
   const { data: lead } = await client.from("leads").select("id").eq("id", leadId).eq("organization_id", orgId).maybeSingle();
   if (!lead) return { ok: false, error: "Lead not found or access denied." };
   try {
@@ -189,6 +206,12 @@ export async function archiveLeadAction(leadId: string) {
   if (!user) return { ok: false, error: "Not authenticated." };
   const { data: orgId } = await client.rpc("current_organization_id");
   if (!orgId) return { ok: false, error: "No active organization found." };
+
+  // Phase 2 — only leads inside the caller's scope can be archived.
+  const salesScope = await getSalesAccessScope();
+  const leadAccess = await assertLeadAccess(client, salesScope, leadId, orgId);
+  if (!leadAccess.ok) return { ok: false, error: "Lead not found or access denied." };
+
   const { error } = await client.from("leads").update({ archived_at: new Date().toISOString(), archived_by: user.id }).eq("id", leadId).eq("organization_id", orgId);
   revalidatePath("/leads");
   revalidatePath(`/leads/${leadId}`);
@@ -202,6 +225,12 @@ export async function restoreLeadAction(leadId: string) {
   if (!user) return { ok: false, error: "Not authenticated." };
   const { data: orgId } = await client.rpc("current_organization_id");
   if (!orgId) return { ok: false, error: "No active organization found." };
+
+  // Phase 2 — only leads inside the caller's scope can be restored.
+  const salesScope = await getSalesAccessScope();
+  const leadAccess = await assertLeadAccess(client, salesScope, leadId, orgId);
+  if (!leadAccess.ok) return { ok: false, error: "Lead not found or access denied." };
+
   const { error } = await client.from("leads").update({ archived_at: null, archived_by: null }).eq("id", leadId).eq("organization_id", orgId);
   revalidatePath("/leads");
   revalidatePath(`/leads/${leadId}`);

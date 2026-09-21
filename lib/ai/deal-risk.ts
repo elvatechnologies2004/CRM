@@ -7,6 +7,7 @@ import "server-only";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getActiveOrgId } from "@/lib/crm/base";
+import { canAccessRecord, getSalesAccessScope } from "@/lib/crm/scope";
 import { generateStructuredOutput } from "@/lib/ai/provider";
 import { buildDealRiskPrompt } from "@/lib/ai/prompts";
 import { DealRiskSchema } from "@/lib/ai/schemas";
@@ -33,6 +34,12 @@ export async function analyzeDealRisk(dealId: string): Promise<DealRiskResult> {
     .single();
 
   if (dealErr || !deal) {
+    throw new Error("Deal not found");
+  }
+
+  // Phase 2 — AI runs only on records inside the caller's sales scope.
+  const salesScope = await getSalesAccessScope();
+  if (salesScope && !canAccessRecord(salesScope, deal as { owner_id?: string | null; created_by?: string | null })) {
     throw new Error("Deal not found");
   }
 
@@ -106,8 +113,14 @@ export async function analyzeDealsRiskBatch(dealIds: string[]): Promise<
     throw new Error("Failed to fetch deals");
   }
 
+  // Phase 2 — batch analysis only considers deals the caller may see.
+  const salesScope = await getSalesAccessScope();
+  const scopedDeals = salesScope
+    ? deals.filter((deal) => canAccessRecord(salesScope, deal as { owner_id?: string | null; created_by?: string | null }))
+    : deals;
+
   const results = await Promise.all(
-    deals.map(async (deal) => {
+    scopedDeals.map(async (deal) => {
       try {
         const { systemPrompt, userPrompt } = buildDealRiskPrompt(deal as Record<string, unknown>);
         const result = await generateStructuredOutput(

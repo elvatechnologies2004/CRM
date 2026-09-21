@@ -8,6 +8,7 @@ import "server-only";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getActiveOrgId } from "@/lib/crm/base";
+import { assertDealAccess, applyOwnerScope, canAccessRecord, getSalesAccessScope } from "@/lib/crm/scope";
 import type { QuoteRecord, QuoteStatus } from "@/lib/types";
 
 interface QuoteListRow {
@@ -106,6 +107,16 @@ export async function createQuote(params: CreateQuoteParams) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { error: "Not authenticated" };
+  }
+
+  // Phase 2 — proposals can only be created against an opportunity the caller
+  // can access (and become visible to the caller's sales scope via created_by).
+  const salesScope = await getSalesAccessScope();
+  if (params.dealId) {
+    const dealAccess = await assertDealAccess(supabase, salesScope, params.dealId, orgId);
+    if (!dealAccess.ok) {
+      return { error: "Opportunity not found or access denied." };
+    }
   }
 
   // Generate quote number via RPC
@@ -225,6 +236,20 @@ export async function updateQuoteStatus(params: UpdateQuoteStatusParams) {
     return { error: "Not authenticated" };
   }
 
+  // Phase 2 — a scoped seller can only change a proposal they own (created_by).
+  const salesScope = await getSalesAccessScope();
+  if (salesScope) {
+    const { data: quoteOwner } = await supabase
+      .from("quotes")
+      .select("created_by")
+      .eq("id", params.quoteId)
+      .eq("organization_id", orgId)
+      .maybeSingle();
+    if (!quoteOwner || !canAccessRecord(salesScope, quoteOwner)) {
+      return { error: "Quote not found or access denied." };
+    }
+  }
+
   const update: Record<string, unknown> = {
     status: params.status,
     updated_at: new Date().toISOString(),
@@ -277,6 +302,20 @@ export async function getQuoteWithItems(quoteId: string) {
     return { quote: null, error: "No active organization" };
   }
 
+  // Phase 2 — the resolved quote must be inside the caller's sales scope.
+  const salesScope = await getSalesAccessScope();
+  if (salesScope) {
+    const { data: quoteOwner } = await supabase
+      .from("quotes")
+      .select("created_by")
+      .eq("id", quoteId)
+      .eq("organization_id", orgId)
+      .maybeSingle();
+    if (!quoteOwner || !canAccessRecord(salesScope, quoteOwner)) {
+      return { quote: null, error: "Quote not found or access denied." };
+    }
+  }
+
   const { data: quote, error: quoteErr } = await supabase
     .from("quotes")
     .select("*, companies(name, domain), contacts(first_name, last_name, email), deals(name, value, stages(name))")
@@ -311,11 +350,17 @@ export async function getAllQuotes(status?: string) {
     return { quotes: [], error: "No active organization" };
   }
 
+  // Phase 2 — proposal list visibility follows the caller's sales scope
+  // via the created_by owner column.
+  const salesScope = await getSalesAccessScope();
+
   let query = supabase
     .from("quotes")
     .select("*, companies(name), contacts(first_name, last_name), deals(name)")
     .eq("organization_id", orgId)
     .order("created_at", { ascending: false });
+
+  query = applyOwnerScope(query, salesScope, "created_by") as typeof query;
 
   if (status) {
     query = query.eq("status", status);

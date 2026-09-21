@@ -1,6 +1,7 @@
 import "server-only";
 
 import { filterValidRelatedRows, type DashboardParentType } from "@/lib/crm/dashboard";
+import { applyOwnerScope, getSalesAccessScope } from "@/lib/crm/scope";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export interface ActivationMilestone {
@@ -41,17 +42,28 @@ export async function getActivation(): Promise<ActivationResult | null> {
   if (!membership) return null;
 
   const organizationId = membership.organization_id as string;
+
+  // Phase 2 — milestone counts reflect the caller's sales scope so a BDO /
+  // RSM never sees org-wide "first lead/opportunity" signals they cannot see.
+  const salesScope = await getSalesAccessScope();
+
+  let leadsQ = supabase
+    .from("leads")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", organizationId)
+    .is("archived_at", null);
+  leadsQ = applyOwnerScope(leadsQ, salesScope, "owner_id") as typeof leadsQ;
+
+  let opportunitiesQ = supabase
+    .from("deals")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", organizationId)
+    .is("archived_at", null);
+  opportunitiesQ = applyOwnerScope(opportunitiesQ, salesScope, "owner_id") as typeof opportunitiesQ;
+
   const [{ count: leads }, { count: opportunities }, { data: taskRows }] = await Promise.all([
-    supabase
-      .from("leads")
-      .select("id", { count: "exact", head: true })
-      .eq("organization_id", organizationId)
-      .is("archived_at", null),
-    supabase
-      .from("deals")
-      .select("id", { count: "exact", head: true })
-      .eq("organization_id", organizationId)
-      .is("archived_at", null),
+    leadsQ,
+    opportunitiesQ,
     supabase
       .from("tasks")
       .select("related_type, related_id")

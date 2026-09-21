@@ -6,6 +6,7 @@ import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 
 import { fetchOwnerIndex, getActiveOrgId } from "@/lib/crm/base";
+import { applyOwnerScope, canAccessRecord, getSalesAccessScope } from "@/lib/crm/scope";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type ExportScope = "leads" | "opportunities" | "proposals" | "sales_report" | "lead" | "opportunity" | "proposal";
@@ -123,12 +124,14 @@ function finalizePdf(doc: PDFKit.PDFDocument): Promise<Buffer> {
   });
 }
 
-async function fetchLeadsForExport(supabase: any, orgId: string, filters: Pick<ExportRequest, "ownerId" | "source" | "from" | "to">, timeZone: string) {
+async function fetchLeadsForExport(supabase: any, orgId: string, scope: any, filters: Pick<ExportRequest, "ownerId" | "source" | "from" | "to">, timeZone: string) {
   let query = supabase
     .from("leads")
     .select("id, full_name, company_name, source, owner_id, status, created_at, expected_value, score, email, phone, last_activity_at")
     .eq("organization_id", orgId)
     .is("archived_at", null);
+
+  query = applyOwnerScope(query, scope, "owner_id");
 
   if (filters.ownerId) query = query.eq("owner_id", filters.ownerId);
   if (filters.source) query = query.eq("source", filters.source);
@@ -140,12 +143,14 @@ async function fetchLeadsForExport(supabase: any, orgId: string, filters: Pick<E
   return data ?? [];
 }
 
-async function fetchDealsForExport(supabase: any, orgId: string, filters: Pick<ExportRequest, "ownerId" | "stage" | "from" | "to" | "outcome">, timeZone: string) {
+async function fetchDealsForExport(supabase: any, orgId: string, scope: any, filters: Pick<ExportRequest, "ownerId" | "stage" | "from" | "to" | "outcome">, timeZone: string) {
   let query = supabase
     .from("deals")
     .select("id, name, company_id, primary_contact_id, owner_id, value, currency, expected_close_date, created_at, won_at, lost_at, lost_reason, competitor, source, stage_id, pipeline_stages(name), companies(name), contacts(full_name)")
     .eq("organization_id", orgId)
     .is("archived_at", null);
+
+  query = applyOwnerScope(query, scope, "owner_id");
 
   if (filters.ownerId) query = query.eq("owner_id", filters.ownerId);
   if (filters.from) query = query.gte("created_at", localDayBoundary(filters.from, timeZone)!);
@@ -159,11 +164,13 @@ async function fetchDealsForExport(supabase: any, orgId: string, filters: Pick<E
   return data ?? [];
 }
 
-async function fetchMeetingsForExport(supabase: any, orgId: string, filters: Pick<ExportRequest, "ownerId" | "from" | "to">, timeZone: string) {
+async function fetchMeetingsForExport(supabase: any, orgId: string, scope: any, filters: Pick<ExportRequest, "ownerId" | "from" | "to">, timeZone: string) {
   let query = supabase
     .from("meetings")
     .select("id, title, meeting_type, start_at, end_at, status, owner_id, notes, outcome")
     .eq("organization_id", orgId);
+
+  query = applyOwnerScope(query, scope, "owner_id");
 
   if (filters.ownerId) query = query.eq("owner_id", filters.ownerId);
   if (filters.from) query = query.gte("start_at", localDayBoundary(filters.from, timeZone)!);
@@ -174,12 +181,14 @@ async function fetchMeetingsForExport(supabase: any, orgId: string, filters: Pic
   return data ?? [];
 }
 
-async function fetchTasksForExport(supabase: any, orgId: string, filters: Pick<ExportRequest, "ownerId" | "from" | "to">, timeZone: string) {
+async function fetchTasksForExport(supabase: any, orgId: string, scope: any, filters: Pick<ExportRequest, "ownerId" | "from" | "to">, timeZone: string) {
   let query = supabase
     .from("tasks")
     .select("id, title, description, type, status, due_at, owner_id, priority")
     .eq("organization_id", orgId)
     .eq("type", "Follow-up");
+
+  query = applyOwnerScope(query, scope, "owner_id");
 
   if (filters.ownerId) query = query.eq("owner_id", filters.ownerId);
   if (filters.from) query = query.gte("due_at", localDayBoundary(filters.from, timeZone)!);
@@ -190,12 +199,15 @@ async function fetchTasksForExport(supabase: any, orgId: string, filters: Pick<E
   return data ?? [];
 }
 
-async function fetchNegotiationsForExport(supabase: any, orgId: string, filters: Pick<ExportRequest, "ownerId" | "from" | "to">, timeZone: string) {
+async function fetchNegotiationsForExport(supabase: any, orgId: string, scope: any, filters: Pick<ExportRequest, "ownerId" | "from" | "to">, timeZone: string) {
   let query = supabase
     .from("activities")
-    .select("id, title, description, activity_type, occurred_at, metadata")
+    .select("id, title, description, activity_type, occurred_at, metadata, deal_id")
     .eq("organization_id", orgId)
     .in("activity_type", ["negotiation_recorded", "negotiation_logged", "proposal_approved"]);
+
+  // Phase 2 — negotiation records are scoped to the actor who logged them.
+  query = applyOwnerScope(query, scope, "actor_user_id");
 
   if (filters.ownerId) query = query.eq("actor_user_id", filters.ownerId);
   if (filters.from) query = query.gte("occurred_at", localDayBoundary(filters.from, timeZone)!);
@@ -206,13 +218,16 @@ async function fetchNegotiationsForExport(supabase: any, orgId: string, filters:
   return data ?? [];
 }
 
-async function fetchQuotesForExport(supabase: any, orgId: string, filters: Pick<ExportRequest, "ownerId" | "from" | "to">, timeZone: string) {
+async function fetchQuotesForExport(supabase: any, orgId: string, scope: any, filters: Pick<ExportRequest, "ownerId" | "from" | "to" | "id">, timeZone: string) {
   let query = supabase
     .from("quotes")
     .select("id, quote_number, deal_id, total, status, issue_date, created_at, created_by")
     .eq("organization_id", orgId);
 
+  query = applyOwnerScope(query, scope, "created_by");
+
   if (filters.ownerId) query = query.eq("created_by", filters.ownerId);
+  if (filters.id) query = query.eq("id", filters.id);
   if (filters.from) query = query.gte("created_at", localDayBoundary(filters.from, timeZone)!);
   if (filters.to) query = query.lt("created_at", localDayBoundary(filters.to, timeZone, true)!);
 
@@ -978,6 +993,10 @@ export async function generateExportBundle(request: ExportRequest): Promise<Expo
     throw new Error("No active organization found.");
   }
 
+  // Phase 2 — resolve the caller's sales scope; every export below is
+  // constrained to the same owner/region visibility as the app lists.
+  const salesScope = await getSalesAccessScope();
+
   const [{ data: organization }, owners] = await Promise.all([
     supabase.from("organizations").select("name, timezone, default_currency").eq("id", orgId).maybeSingle(),
     fetchOwnerIndex(supabase, orgId),
@@ -1005,11 +1024,14 @@ export async function generateExportBundle(request: ExportRequest): Promise<Expo
 
   if (scope === "lead" && request.id) {
     const { data: lead } = await supabase.from("leads").select("id, full_name, company_name, source, owner_id, status, created_at, expected_value, score, email, phone, last_activity_at").eq("organization_id", orgId).eq("id", request.id).maybeSingle();
-    leads = lead ? [lead] : [];
+    // Phase 2 — single-record export respects the caller's sales scope.
+    leads = lead && canAccessRecord(salesScope, lead) ? [lead] : [];
   } else if (scope === "opportunity" && request.id) {
     const { data: deal } = await supabase.from("deals").select("id, name, value, currency, owner_id, expected_close_date, created_at, updated_at, won_at, lost_at, win_reason, lost_reason, competitor, description, source, pipeline_stages(name), companies(name), contacts(full_name)").eq("organization_id", orgId).eq("id", request.id).maybeSingle();
-    opportunities = deal ? [deal] : [];
-    if (deal) {
+    // Phase 2 — single-record export respects the caller's sales scope.
+    opportunities = deal && canAccessRecord(salesScope, deal) ? [deal] : [];
+    if (opportunities.length > 0) {
+      const deal = opportunities[0];
       const [leadResult, meetingsResult, proposalsResult, followUpsResult, activitiesResult] = await Promise.all([
         supabase.from("leads").select("id, full_name, email, phone, company_name, source, expected_value, owner_id, created_at, last_activity_at, status, budget, interested_product, description").eq("organization_id", orgId).eq("converted_deal_id", deal.id).maybeSingle(),
         supabase.from("meetings").select("id, title, meeting_type, start_at, end_at, status, notes, outcome, related_id").eq("organization_id", orgId).eq("related_type", "deal").eq("related_id", deal.id).order("start_at", { ascending: true }),
@@ -1024,13 +1046,13 @@ export async function generateExportBundle(request: ExportRequest): Promise<Expo
       singleOpportunityActivities = activitiesResult.data ?? [];
     }
   } else {
-    leads = await fetchLeadsForExport(supabase, orgId, request, timeZone);
-    opportunities = await fetchDealsForExport(supabase, orgId, request, timeZone);
+    leads = await fetchLeadsForExport(supabase, orgId, salesScope, request, timeZone);
+    opportunities = await fetchDealsForExport(supabase, orgId, salesScope, request, timeZone);
     opportunities = opportunities.filter((deal) => !request.stage || normalizeStageName(deal.pipeline_stages?.name ?? deal.stage_name) === normalizeStageName(request.stage));
-    meetings = await fetchMeetingsForExport(supabase, orgId, request, timeZone);
-    proposals = await fetchQuotesForExport(supabase, orgId, request, timeZone);
-    followUps = await fetchTasksForExport(supabase, orgId, request, timeZone);
-    negotiations = await fetchNegotiationsForExport(supabase, orgId, request, timeZone);
+    meetings = await fetchMeetingsForExport(supabase, orgId, salesScope, request, timeZone);
+    proposals = await fetchQuotesForExport(supabase, orgId, salesScope, request, timeZone);
+    followUps = await fetchTasksForExport(supabase, orgId, salesScope, request, timeZone);
+    negotiations = await fetchNegotiationsForExport(supabase, orgId, salesScope, request, timeZone);
     won = opportunities.filter(isClosedWon);
     lost = opportunities.filter(isClosedLost);
   }

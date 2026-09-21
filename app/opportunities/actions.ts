@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getActiveOrgId } from "@/lib/crm/base";
 import { can } from "@/lib/crm/context";
 import { permanentlyDeleteOpportunity } from "@/lib/crm/permanent-delete";
+import { assertDealAccess, canAccessRecord, getSalesAccessScope } from "@/lib/crm/scope";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function toIsoDateTime(date: string, time: string) {
@@ -46,13 +47,19 @@ export async function createOpportunityMeetingAction(
 
   const { data: deal } = await supabase
     .from("deals")
-    .select("id, organization_id, name, pipeline_id, owner_id, company_id, primary_contact_id")
+    .select("id, organization_id, name, pipeline_id, owner_id, created_by, company_id, primary_contact_id")
     .eq("id", dealId)
     .eq("organization_id", orgId)
     .maybeSingle();
 
   if (!deal) {
     return { ok: false, error: "Opportunity not found.", message: "Opportunity not found." };
+  }
+
+  // Phase 2 — scope check before any deal-scoped mutation.
+  const salesScope = await getSalesAccessScope();
+  if (salesScope && !canAccessRecord(salesScope, deal)) {
+    return { ok: false, error: "Opportunity not found or access denied.", message: "Opportunity not found or access denied." };
   }
 
   if (!input.meetingDate || !input.meetingTime) {
@@ -163,13 +170,19 @@ export async function createOpportunityFollowUpAction(
 
   const { data: deal } = await supabase
     .from("deals")
-    .select("id, organization_id, name, owner_id, pipeline_id, stage_id")
+    .select("id, organization_id, name, owner_id, created_by, pipeline_id, stage_id")
     .eq("id", dealId)
     .eq("organization_id", orgId)
     .maybeSingle();
 
   if (!deal) {
     return { ok: false, error: "Opportunity not found.", message: "Opportunity not found." };
+  }
+
+  // Phase 2 — scope check before any deal-scoped mutation.
+  const salesScope = await getSalesAccessScope();
+  if (salesScope && !canAccessRecord(salesScope, deal)) {
+    return { ok: false, error: "Opportunity not found or access denied.", message: "Opportunity not found or access denied." };
   }
 
   if (!input.method || !input.followUpDate || !input.response) {
@@ -274,13 +287,19 @@ export async function approveOpportunityNegotiationAction(
 
   const { data: deal } = await supabase
     .from("deals")
-    .select("id, organization_id, name, pipeline_id, stage_id")
+    .select("id, organization_id, name, pipeline_id, stage_id, owner_id, created_by")
     .eq("id", dealId)
     .eq("organization_id", orgId)
     .maybeSingle();
 
   if (!deal) {
     return { ok: false, error: "Opportunity not found.", message: "Opportunity not found." };
+  }
+
+  // Phase 2 — scope check before any deal-scoped mutation.
+  const salesScope = await getSalesAccessScope();
+  if (salesScope && !canAccessRecord(salesScope, deal)) {
+    return { ok: false, error: "Opportunity not found or access denied.", message: "Opportunity not found or access denied." };
   }
 
   const { data: currentStage } = await supabase
@@ -411,12 +430,18 @@ export async function recordOpportunityNegotiationAction(
 
   const { data: deal } = await supabase
     .from("deals")
-    .select("id, organization_id, name, pipeline_id, stage_id, value")
+    .select("id, organization_id, name, pipeline_id, stage_id, value, owner_id, created_by")
     .eq("id", dealId)
     .eq("organization_id", orgId)
     .maybeSingle();
 
   if (!deal) return { ok: false, error: "Opportunity not found.", message: "Opportunity not found." };
+
+  // Phase 2 — scope check before any deal-scoped mutation.
+  const salesScope = await getSalesAccessScope();
+  if (salesScope && !canAccessRecord(salesScope, deal)) {
+    return { ok: false, error: "Opportunity not found or access denied.", message: "Opportunity not found or access denied." };
+  }
 
   const { data: currentStage } = await supabase
     .from("pipeline_stages")
@@ -508,12 +533,18 @@ export async function closeOpportunityWonAction(
 
   const { data: deal } = await supabase
     .from("deals")
-    .select("id, organization_id, name, pipeline_id, stage_id, value")
+    .select("id, organization_id, name, pipeline_id, stage_id, value, owner_id, created_by")
     .eq("id", dealId)
     .eq("organization_id", orgId)
     .maybeSingle();
 
   if (!deal) return { ok: false, error: "Opportunity not found.", message: "Opportunity not found." };
+
+  // Phase 2 — scope check before any deal-scoped mutation.
+  const salesScope = await getSalesAccessScope();
+  if (salesScope && !canAccessRecord(salesScope, deal)) {
+    return { ok: false, error: "Opportunity not found or access denied.", message: "Opportunity not found or access denied." };
+  }
 
   const { data: currentStage } = await supabase
     .from("pipeline_stages")
@@ -650,12 +681,18 @@ export async function closeOpportunityLostAction(
 
   const { data: deal } = await supabase
     .from("deals")
-    .select("id, organization_id, name, pipeline_id, stage_id, value")
+    .select("id, organization_id, name, pipeline_id, stage_id, value, owner_id, created_by")
     .eq("id", dealId)
     .eq("organization_id", orgId)
     .maybeSingle();
 
   if (!deal) return { ok: false, error: "Opportunity not found.", message: "Opportunity not found." };
+
+  // Phase 2 — scope check before any deal-scoped mutation.
+  const salesScope = await getSalesAccessScope();
+  if (salesScope && !canAccessRecord(salesScope, deal)) {
+    return { ok: false, error: "Opportunity not found or access denied.", message: "Opportunity not found or access denied." };
+  }
 
   const { data: currentStage } = await supabase
     .from("pipeline_stages")
@@ -803,13 +840,19 @@ export async function approveOpportunityProposalSubmittedAction(
 
   const { data: deal } = await supabase
     .from("deals")
-    .select("id, organization_id, name, pipeline_id, stage_id")
+    .select("id, organization_id, name, pipeline_id, stage_id, owner_id, created_by")
     .eq("id", dealId)
     .eq("organization_id", orgId)
     .maybeSingle();
 
   if (!deal) {
     return { ok: false, error: "Opportunity not found.", message: "Opportunity not found." };
+  }
+
+  // Phase 2 — scope check before any deal-scoped mutation.
+  const salesScope = await getSalesAccessScope();
+  if (salesScope && !canAccessRecord(salesScope, deal)) {
+    return { ok: false, error: "Opportunity not found or access denied.", message: "Opportunity not found or access denied." };
   }
 
   const { data: quote } = await supabase
@@ -945,13 +988,19 @@ export async function completeOpportunityMeetingAction(
 
   const { data: deal } = await supabase
     .from("deals")
-    .select("id, organization_id, name, pipeline_id, stage_id")
+    .select("id, organization_id, name, pipeline_id, stage_id, owner_id, created_by")
     .eq("id", dealId)
     .eq("organization_id", orgId)
     .maybeSingle();
 
   if (!deal) {
     return { ok: false, error: "Opportunity not found.", message: "Opportunity not found." };
+  }
+
+  // Phase 2 — scope check before any deal-scoped mutation.
+  const salesScope = await getSalesAccessScope();
+  if (salesScope && !canAccessRecord(salesScope, deal)) {
+    return { ok: false, error: "Opportunity not found or access denied.", message: "Opportunity not found or access denied." };
   }
 
   const { data: meeting } = await supabase
@@ -1077,6 +1126,11 @@ export async function manageOpportunityAction(dealId: string, action: "delete" |
   if (!user) return { ok: false, error: "Not authenticated." };
   const { data: orgId } = await supabase.rpc("current_organization_id");
   if (!orgId) return { ok: false, error: "No active organization found." };
+
+  // Phase 2 — only opportunities inside the caller's scope can be managed.
+  const salesScope = await getSalesAccessScope();
+  const dealAccess = await assertDealAccess(supabase, salesScope, dealId, orgId);
+  if (!dealAccess.ok) return { ok: false, error: "Opportunity not found or access denied." };
 
   if (action === "delete") {
     if (!(await can("deal.delete"))) {

@@ -4,6 +4,7 @@ import { getActiveOrgId, toIso } from "@/lib/crm/base";
 import { formatTimeUTC } from "@/lib/date-utils";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
+import { applyOwnerScope, getSalesAccessScope, type SalesAccessScope } from "@/lib/crm/scope";
 import type {
   StatCardData,
   RevenuePoint,
@@ -45,6 +46,47 @@ export async function getDashboardData(): Promise<DashboardData | null> {
   const organizationId = await getActiveOrgId(supabase);
   if (!organizationId) return null;
 
+  const scope = await getSalesAccessScope();
+
+  // Phase 2 — owner-scoped feeds (BDO/RSM must not see the whole org feed).
+  let recentLeadsQ = supabase
+    .from("leads")
+    .select("id, full_name, email, company_name, source, score, created_at")
+    .eq("organization_id", organizationId)
+    .is("archived_at", null)
+    .order("created_at", { ascending: false })
+    .limit(5);
+  recentLeadsQ = applyOwnerScope(recentLeadsQ, scope, "owner_id") as typeof recentLeadsQ;
+
+  let riskDealsQ = supabase
+    .from("deals")
+    .select("id, value, health_status, companies(name)")
+    .eq("organization_id", organizationId)
+    .is("archived_at", null)
+    .or("health_status.eq.At Risk,health_status.eq.Critical")
+    .limit(10);
+  riskDealsQ = applyOwnerScope(riskDealsQ, scope, "owner_id") as typeof riskDealsQ;
+
+  let tasksQ = supabase
+    .from("tasks")
+    .select("id, title, priority, due_at, status, related_type, related_id")
+    .eq("organization_id", organizationId)
+    .in("status", ["Open", "In Progress"])
+    .order("due_at", { ascending: true, nullsFirst: false })
+    .limit(6);
+  tasksQ = applyOwnerScope(tasksQ, scope, "owner_id") as typeof tasksQ;
+
+  let meetingsQ = supabase
+    .from("meetings")
+    .select("id, title, start_at, meeting_url, status, related_type, related_id")
+    .eq("organization_id", organizationId)
+    .in("status", ["scheduled", "in_progress", "rescheduled"])
+    .gte("start_at", startOfToday())
+    .lt("start_at", startOfTomorrow())
+    .order("start_at", { ascending: true })
+    .limit(5);
+  meetingsQ = applyOwnerScope(meetingsQ, scope, "owner_id") as typeof meetingsQ;
+
   const [summaryRes, recentLeadsRes, tasksRes, meetingsRes, risksRes] =
     await Promise.all([
       supabase
@@ -52,47 +94,25 @@ export async function getDashboardData(): Promise<DashboardData | null> {
         .select("total_leads, active_opportunities, won_opportunities, closed_won_this_month, expected_revenue, deals_by_stage, revenue_by_month")
         .eq("organization_id", organizationId)
         .maybeSingle(),
-      supabase
-        .from("leads")
-        .select("id, full_name, email, company_name, source, score, created_at")
-        .eq("organization_id", organizationId)
-        .is("archived_at", null)
-        .order("created_at", { ascending: false })
-        .limit(5),
-      supabase
-        .from("tasks")
-        .select("id, title, priority, due_at, status, related_type, related_id")
-        .eq("organization_id", organizationId)
-        .in("status", ["Open", "In Progress"])
-        .order("due_at", { ascending: true, nullsFirst: false })
-        .limit(6),
-      supabase
-        .from("meetings")
-        .select("id, title, start_at, meeting_url, status, related_type, related_id")
-        .eq("organization_id", organizationId)
-        .in("status", ["scheduled", "in_progress", "rescheduled"])
-        .gte("start_at", startOfToday())
-        .lt("start_at", startOfTomorrow())
-        .order("start_at", { ascending: true })
-        .limit(5),
-      supabase
-        .from("deals")
-        .select("id, value, health_status, companies(name)")
-        .eq("organization_id", organizationId)
-        .is("archived_at", null)
-        .or("health_status.eq.At Risk,health_status.eq.Critical")
-        .limit(10),
+      recentLeadsQ,
+      tasksQ,
+      meetingsQ,
+      riskDealsQ,
     ]);
 
-  const aggregate = summaryRes.data ? {
-    totalLeads: summaryRes.data.total_leads,
-    activeOpportunities: summaryRes.data.active_opportunities,
-    wonOpportunities: summaryRes.data.won_opportunities,
-    closedWonThisMonth: summaryRes.data.closed_won_this_month,
-    expectedRevenue: Number(summaryRes.data.expected_revenue ?? 0),
-    dealsByStage: (summaryRes.data.deals_by_stage ?? {}) as Record<string, number>,
-    revenueByMonth: (summaryRes.data.revenue_by_month ?? {}) as Record<string, number>,
-  } : await getDashboardAggregateFallback(supabase, organizationId);
+  // Phase 2 — org-wide roles use the SQL-based summary view; scoped roles
+  // (BDO/RSM) get live owner-scoped aggregates so KPIs never leak org-wide.
+  const aggregate = scope && scope.visibleOwnerIds
+    ? await getSalesAggregateScoped(supabase, organizationId, scope)
+    : summaryRes.data ? {
+        totalLeads: summaryRes.data.total_leads,
+        activeOpportunities: summaryRes.data.active_opportunities,
+        wonOpportunities: summaryRes.data.won_opportunities,
+        closedWonThisMonth: summaryRes.data.closed_won_this_month,
+        expectedRevenue: Number(summaryRes.data.expected_revenue ?? 0),
+        dealsByStage: (summaryRes.data.deals_by_stage ?? {}) as Record<string, number>,
+        revenueByMonth: (summaryRes.data.revenue_by_month ?? {}) as Record<string, number>,
+      } : await getDashboardAggregateFallback(supabase, organizationId);
 
   const revenue = buildRevenueSeries(aggregate.revenueByMonth);
   const dealsByStage: DealStageOverview[] = Object.entries(aggregate.dealsByStage).map(([stage, count]) => ({
@@ -122,12 +142,14 @@ export async function getDashboardData(): Promise<DashboardData | null> {
     supabase,
     organizationId,
     (tasksRes.data ?? []) as DashboardTaskRow[],
+    scope,
   );
   const meetingRows = await filterValidRelatedRows(
     supabase,
     organizationId,
     (meetingsRes.data ?? []) as DashboardMeetingRow[],
     ["lead", "deal"],
+    scope,
   );
 
   const upcomingTasks: Task[] = taskRows.map((t) => ({
@@ -184,8 +206,9 @@ async function filterValidTaskRows(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   organizationId: string,
   rows: DashboardTaskRow[],
+  scope?: SalesAccessScope | null,
 ): Promise<DashboardTaskRow[]> {
-  return filterValidRelatedRows(supabase, organizationId, rows, ["lead", "deal", "contact", "company"] satisfies DashboardParentType[]);
+  return filterValidRelatedRows(supabase, organizationId, rows, ["lead", "deal", "contact", "company"] satisfies DashboardParentType[], scope);
 }
 
 export async function filterValidRelatedRows<T extends { related_type: string | null; related_id: string | null }>(
@@ -193,6 +216,7 @@ export async function filterValidRelatedRows<T extends { related_type: string | 
   organizationId: string,
   rows: T[],
   allowedTypes: DashboardParentType[],
+  scope?: SalesAccessScope | null,
 ): Promise<T[]> {
   const idsByType: Record<DashboardParentType, string[]> = {
     lead: [],
@@ -220,12 +244,20 @@ export async function filterValidRelatedRows<T extends { related_type: string | 
         const uniqueIds = [...new Set(ids)];
         if (!uniqueIds.length) return;
 
-        const { data, error } = await supabase
+        let query = supabase
           .from(tableByType[type])
           .select("id")
           .eq("organization_id", organizationId)
           .is("archived_at", null)
           .in("id", uniqueIds);
+
+        // Phase 2 — a scoped user must not have their widgets back-filled with
+        // rows whose parent lead/opportunity belongs to someone else's scope.
+        if (type === "lead" || type === "deal") {
+          query = applyOwnerScope(query, scope, "owner_id") as typeof query;
+        }
+
+        const { data, error } = await query;
 
         if (error) {
           console.error(`[dashboard] ${type} task parent lookup failed`, error.message);
@@ -299,6 +331,78 @@ async function getDashboardAggregateFallback(
     const key = new Date(row.won_at as string).toISOString().slice(0, 7);
     revenueByMonth[key] = (revenueByMonth[key] ?? 0) + 1;
   }
+  return {
+    totalLeads: totalLeads ?? 0,
+    activeOpportunities: open.length,
+    wonOpportunities: won.length,
+    closedWonThisMonth,
+    expectedRevenue: open.reduce((sum, row) => sum + Number(row.value ?? 0) * Number(row.probability ?? 0) / 100, 0),
+    dealsByStage,
+    revenueByMonth,
+  };
+}
+
+/**
+ * Live owner-scoped dashboard KPIs for BDO/RSM roles. These roles never read
+ * the org-wide `crm_dashboard_summary` snapshot; every aggregate below is
+ * restricted to the caller's visible owner set.
+ */
+async function getSalesAggregateScoped(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  organizationId: string,
+  scope: SalesAccessScope,
+): Promise<DashboardAggregate> {
+  let leadsQ = supabase
+    .from("leads")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", organizationId)
+    .is("archived_at", null);
+  leadsQ = applyOwnerScope(leadsQ, scope, "owner_id") as typeof leadsQ;
+
+  let dealsQ = supabase
+    .from("deals")
+    .select("won_at, lost_at, value, probability")
+    .eq("organization_id", organizationId)
+    .is("archived_at", null);
+  dealsQ = applyOwnerScope(dealsQ, scope, "owner_id") as typeof dealsQ;
+
+  let openQ = supabase
+    .from("deals")
+    .select("pipeline_stages(name)")
+    .eq("organization_id", organizationId)
+    .is("archived_at", null)
+    .is("won_at", null)
+    .is("lost_at", null);
+  openQ = applyOwnerScope(openQ, scope, "owner_id") as typeof openQ;
+
+  const [{ count: totalLeads }, { data: deals }, { data: openRows }] = await Promise.all([
+    leadsQ,
+    dealsQ,
+    openQ,
+  ]);
+
+  const rows = (deals ?? []) as Array<{ won_at: string | null; lost_at: string | null; value: number | null; probability: number | null }>;
+  const open = rows.filter((row) => !row.won_at && !row.lost_at);
+  const won = rows.filter((row) => row.won_at);
+  const now = new Date();
+  const closedWonThisMonth = won.filter((row) => {
+    const date = new Date(row.won_at as string);
+    return date.getUTCMonth() === now.getUTCMonth() && date.getUTCFullYear() === now.getUTCFullYear();
+  }).length;
+
+  const dealsByStage: Record<string, number> = {};
+  for (const row of openRows ?? []) {
+    const name = Array.isArray(row.pipeline_stages) ? null : (row.pipeline_stages as { name: string } | null)?.name;
+    const key = name ?? "Open";
+    dealsByStage[key] = (dealsByStage[key] ?? 0) + 1;
+  }
+
+  const revenueByMonth: Record<string, number> = {};
+  for (const row of won) {
+    const key = new Date(row.won_at as string).toISOString().slice(0, 7);
+    revenueByMonth[key] = (revenueByMonth[key] ?? 0) + Number(row.value ?? 0);
+  }
+
   return {
     totalLeads: totalLeads ?? 0,
     activeOpportunities: open.length,

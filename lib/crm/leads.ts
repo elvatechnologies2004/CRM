@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
 import { autoRouteLead, type RouterLead } from "@/lib/routing/routing";
 import { dispatchWorkflowEvent } from "@/lib/workflows/dispatch";
+import { applyOwnerScope, getSalesAccessScope, assertLeadAccess, canAccessRecord } from "@/lib/crm/scope";
 import type { LeadRecord, LeadQualification, LeadStatus, LeadSourceOption, LeadNote, LeadActivity } from "@/lib/types";
 
 export interface LeadQuery {
@@ -111,6 +112,7 @@ export async function getLeads(query: LeadQuery = {}): Promise<LeadListResult> {
   if (!organizationId) return { rows: [], total: 0 };
 
   const owners = await fetchOwnerIndex(supabase, organizationId);
+  const scope = await getSalesAccessScope();
 
   const page = Math.max(query.page ?? 1, 1);
   const pageSize = query.pageSize ?? PAGE_SIZE;
@@ -122,6 +124,9 @@ export async function getLeads(query: LeadQuery = {}): Promise<LeadListResult> {
     .select("*", { count: "exact" })
     .eq("organization_id", organizationId)
     .range(from, to);
+
+  // Phase 2 — owner/region scope (primary enforcement layer).
+  b = applyOwnerScope(b, scope, "owner_id");
 
   if (query.archiveFilter !== "all" && query.archiveFilter !== "archived") b = b.is("archived_at", null);
   if (query.archiveFilter === "archived") b = b.not("archived_at", "is", null);
@@ -167,6 +172,7 @@ export async function getLeadById(id: string): Promise<LeadRecord | null> {
   const organizationId = await getActiveOrgId(supabase);
   if (!organizationId) return null;
 
+  const scope = await getSalesAccessScope();
   const owners = await fetchOwnerIndex(supabase, organizationId);
   const { data } = await supabase
     .from("leads")
@@ -176,6 +182,9 @@ export async function getLeadById(id: string): Promise<LeadRecord | null> {
     .maybeSingle();
 
   if (!data) return null;
+  if (scope && !canAccessRecord(scope, data as unknown as { owner_id?: string | null; created_by?: string | null })) {
+    return null;
+  }
   return mapLeadRow(data as unknown as LeadRow, owners);
 }
 
@@ -300,6 +309,11 @@ export async function updateLead(input: LeadUpdateInput): Promise<LeadRecord | n
   const supabase = await createSupabaseServerClient();
   const organizationId = await ensureOrgForWrite(supabase);
 
+  // Phase 2 — mutate only records inside the caller's sales scope.
+  const scope = await getSalesAccessScope();
+  const access = await assertLeadAccess(supabase, scope, input.id, organizationId);
+  if (!access.ok) return null;
+
   const patch: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
     last_activity_at: new Date().toISOString(),
@@ -364,6 +378,11 @@ export async function archiveLead(id: string): Promise<boolean> {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Phase 2 — a scoped seller cannot archive someone else's lead.
+  const scope = await getSalesAccessScope();
+  const access = await assertLeadAccess(supabase, scope, id, organizationId);
+  if (!access.ok) return false;
+
   const { error } = await supabase
     .from("leads")
     .update({ archived_at: new Date().toISOString(), archived_by: user?.id ?? null })
@@ -377,6 +396,11 @@ export async function archiveLead(id: string): Promise<boolean> {
 export async function convertLead(id: string): Promise<string | null> {
   const supabase = await createSupabaseServerClient();
   await ensureOrgForWrite(supabase);
+
+  // Phase 2 — only leads inside the caller's scope may be converted
+  // (getLeadById is itself scope-guarded).
+  const lead = await getLeadById(id);
+  if (!lead) return null;
 
   const { data, error } = await supabase.rpc("convert_lead", { p_lead_id: id });;
   if (error) {
@@ -401,6 +425,11 @@ export async function getLeadNotes(leadId: string): Promise<LeadNote[]> {
   const supabase = await createSupabaseServerClient();
   const organizationId = await getActiveOrgId(supabase);
   if (!organizationId) return [];
+
+  // Phase 2 — sub-collections only resolve for records inside the scope.
+  const scope = await getSalesAccessScope();
+  const access = await assertLeadAccess(supabase, scope, leadId, organizationId);
+  if (!access.ok) return [];
 
   const { data } = await supabase
     .from("notes")
@@ -428,6 +457,11 @@ export async function addLeadNote(leadId: string, body: string): Promise<boolean
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Phase 2 — note writes are gated on parent-lead scope.
+  const scope = await getSalesAccessScope();
+  const access = await assertLeadAccess(supabase, scope, leadId, organizationId);
+  if (!access.ok) return false;
+
   const { error } = await supabase
     .from("notes")
     .insert({
@@ -450,6 +484,11 @@ export async function getLeadActivities(leadId: string): Promise<LeadActivity[]>
   const supabase = await createSupabaseServerClient();
   const organizationId = await getActiveOrgId(supabase);
   if (!organizationId) return [];
+
+  // Phase 2 — sub-collections only resolve for records inside the scope.
+  const scope = await getSalesAccessScope();
+  const access = await assertLeadAccess(supabase, scope, leadId, organizationId);
+  if (!access.ok) return [];
 
   const { data } = await supabase
     .from("activities")
