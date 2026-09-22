@@ -7,7 +7,7 @@ import { DateRangeSelector } from "@/components/dashboard/date-range-selector";
 import { useCurrentUser } from "@/lib/current-user";
 import { formatDate } from "@/lib/utils";
 
-function DashboardHeader() {
+function DashboardHeader({ title, subtitle }: { title?: string; subtitle?: string }) {
   const user = useCurrentUser();
   const [today, setToday] = React.useState<string | null>(null);
 
@@ -20,13 +20,15 @@ function DashboardHeader() {
     <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-[26px]">
-          {user ? `Good Morning, ${user.name}!` : "Good Morning!"}{" "}
-          <span role="img" aria-label="wave">
-            👋
-          </span>
+          {title ?? (user ? `Good Morning, ${user.name}!` : "Good Morning!")}{" "}
+          {!title ? (
+            <span role="img" aria-label="wave">
+              👋
+            </span>
+          ) : null}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Here&apos;s what&apos;s happening with your business today.
+          {subtitle ?? "Here&apos;s what&apos;s happening with your business today."}
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
