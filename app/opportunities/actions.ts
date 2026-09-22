@@ -7,6 +7,11 @@ import { can } from "@/lib/crm/context";
 import { permanentlyDeleteOpportunity } from "@/lib/crm/permanent-delete";
 import { assertDealAccess, canAccessRecord, getSalesAccessScope } from "@/lib/crm/scope";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  approveDealCloseRequest,
+  rejectDealCloseRequest,
+  requestDealCloseApproval,
+} from "@/lib/deal-close-approval";
 
 function toIsoDateTime(date: string, time: string) {
   const value = `${date}T${time}:00`;
@@ -546,6 +551,24 @@ export async function closeOpportunityWonAction(
     return { ok: false, error: "Opportunity not found or access denied.", message: "Opportunity not found or access denied." };
   }
 
+  const { data: approvedRequest } = await supabase
+    .from("deal_close_requests")
+    .select("id")
+    .eq("organization_id", orgId)
+    .eq("deal_id", dealId)
+    .eq("requested_outcome", "won")
+    .eq("status", "approved")
+    .limit(1)
+    .maybeSingle();
+
+  if (!approvedRequest) {
+    return {
+      ok: false,
+      error: "This opportunity requires Head of Sales approval before it can be closed as won.",
+      message: "This opportunity requires Head of Sales approval before it can be closed as won.",
+    };
+  }
+
   const { data: currentStage } = await supabase
     .from("pipeline_stages")
     .select("id, name")
@@ -612,7 +635,9 @@ export async function closeOpportunityWonAction(
       last_activity_at: new Date().toISOString(),
     })
     .eq("id", dealId)
-    .eq("organization_id", orgId);
+    .eq("organization_id", orgId)
+    .eq("won_at", null)
+    .eq("lost_at", null);
 
   if (updateError) {
     return { ok: false, error: updateError.message, message: updateError.message };
@@ -694,6 +719,24 @@ export async function closeOpportunityLostAction(
     return { ok: false, error: "Opportunity not found or access denied.", message: "Opportunity not found or access denied." };
   }
 
+  const { data: approvedRequest } = await supabase
+    .from("deal_close_requests")
+    .select("id")
+    .eq("organization_id", orgId)
+    .eq("deal_id", dealId)
+    .eq("requested_outcome", "lost")
+    .eq("status", "approved")
+    .limit(1)
+    .maybeSingle();
+
+  if (!approvedRequest) {
+    return {
+      ok: false,
+      error: "This opportunity requires Head of Sales approval before it can be closed as lost.",
+      message: "This opportunity requires Head of Sales approval before it can be closed as lost.",
+    };
+  }
+
   const { data: currentStage } = await supabase
     .from("pipeline_stages")
     .select("id, name")
@@ -772,7 +815,9 @@ export async function closeOpportunityLostAction(
       last_activity_at: new Date().toISOString(),
     })
     .eq("id", dealId)
-    .eq("organization_id", orgId);
+    .eq("organization_id", orgId)
+    .eq("won_at", null)
+    .eq("lost_at", null);
 
   if (updateError) {
     return { ok: false, error: updateError.message, message: updateError.message };
@@ -819,6 +864,28 @@ export async function closeOpportunityLostAction(
   revalidatePath("/opportunities");
   revalidatePath(`/opportunities/${dealId}`);
   return { ok: true, message: "Opportunity closed as lost successfully." };
+}
+
+export async function requestCloseApprovalAction(
+  dealId: string,
+  input: {
+    outcome: "won" | "lost";
+    finalValue?: number | null;
+    closeDate?: string | null;
+    lostReason?: string | null;
+    competitor?: string | null;
+    notes?: string | null;
+  }
+): Promise<{ ok: boolean; error?: string; message?: string; requestId?: string }> {
+  return requestDealCloseApproval({ dealId, outcome: input.outcome, finalValue: input.finalValue, closeDate: input.closeDate, lostReason: input.lostReason, competitor: input.competitor, notes: input.notes });
+}
+
+export async function approveCloseRequestAction(requestId: string): Promise<{ ok: boolean; error?: string; message?: string }> {
+  return approveDealCloseRequest(requestId);
+}
+
+export async function rejectCloseRequestAction(requestId: string, reason: string): Promise<{ ok: boolean; error?: string; message?: string }> {
+  return rejectDealCloseRequest(requestId, reason);
 }
 
 export async function approveOpportunityProposalSubmittedAction(

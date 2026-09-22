@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, CalendarClock, CheckCircle2, Circle, Flag, MessageSquareText, Sparkles } from "lucide-react";
 
 import {
+  approveCloseRequestAction,
   approveOpportunityNegotiationAction,
   approveOpportunityProposalSubmittedAction,
   closeOpportunityLostAction,
@@ -13,6 +14,8 @@ import {
   createOpportunityFollowUpAction,
   createOpportunityMeetingAction,
   recordOpportunityNegotiationAction,
+  rejectCloseRequestAction,
+  requestCloseApprovalAction,
 } from "@/app/opportunities/actions";
 import { createQuoteAction, updateQuoteStatusAction } from "@/app/quotes/actions";
 import {
@@ -775,22 +778,23 @@ export function OpportunityDetailClient({
     }
 
     setIsSubmitting(true);
-    const result = await closeOpportunityWonAction(deal.id, {
+    const result = await requestCloseApprovalAction(deal.id, {
+      outcome: "won",
       finalValue: value,
       closeDate: wonForm.closeDate,
-      closingNotes: wonForm.closingNotes || null,
-      customerDecision: wonForm.customerDecision || null,
+      notes: wonForm.closingNotes || null,
     });
     setIsSubmitting(false);
 
     if (!result.ok) {
-      window.alert(result.message || result.error || "Unable to close opportunity as won.");
+      window.alert(result.message || result.error || "Unable to request Head approval for the Closed Won outcome.");
       return;
     }
 
     setWonConfirmOpen(false);
     setWonOpen(false);
     router.refresh();
+    window.alert(result.message || "Closed Won approval requested. Awaiting Head of Sales approval.");
   };
 
   const handleLostContinue = () => {
@@ -821,27 +825,31 @@ export function OpportunityDetailClient({
     }
 
     setIsSubmitting(true);
-    const result = await closeOpportunityLostAction(deal.id, {
+    const result = await requestCloseApprovalAction(deal.id, {
+      outcome: "lost",
       lostReason: lostForm.lostReason,
       competitor: lostForm.competitor || null,
-      otherReason: lostForm.otherReason || null,
       closeDate: lostForm.closeDate,
       finalValue: lostForm.finalValue ? Number(lostForm.finalValue) : null,
-      closingNotes: lostForm.closingNotes || null,
+      notes: lostForm.closingNotes || null,
     });
     setIsSubmitting(false);
 
     if (!result.ok) {
-      window.alert(result.message || result.error || "Unable to close opportunity as lost.");
+      window.alert(result.message || result.error || "Unable to request Head approval for the Closed Lost outcome.");
       return;
     }
 
     setLostConfirmOpen(false);
     setLostOpen(false);
     router.refresh();
+    window.alert(result.message || "Closed Lost approval requested. Awaiting Head of Sales approval.");
   };
 
   const isClosed = ["Closed Won", "Closed Lost"].includes(deal.stageName || "");
+
+  void approveCloseRequestAction;
+  void rejectCloseRequestAction;
 
   const formatActivityTitle = (title?: string | null) => {
     if (!title) return "Activity";
